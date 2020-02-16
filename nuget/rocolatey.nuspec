@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Do not remove this test for UTF-8: if “Ω” doesn’t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>rocolatey</id>
+    <title>rocolatey</title>
+    <version>0.1.0</version>
+    <authors>Manfred Wallner</authors>
+    <owners>Manfred Wallner</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>blazing fast local Chocolatey queries</summary>
+    <description>
+      querying the list of local installed Chocolatey packages, 100 times faster than `choco list -lo`.
+    </description>
+    <copyright>Copyright (c) 2020 Manfred Wallner</copyright>
+    <projectUrl>https://github.com/mwallner/rocolatey</projectUrl>
+    <licenseUrl>https://raw.githubusercontent.com/mwallner/rocolatey/master/LICENSE</licenseUrl>
+    <iconUrl>https://raw.githubusercontent.com/mwallner/rocolatey/master/rocolatey.png</iconUrl>
+    <language>en-US</language>
+    <tags>chocolatey local</tags>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
