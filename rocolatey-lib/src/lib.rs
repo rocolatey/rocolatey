@@ -200,10 +200,7 @@ async fn update_feed_index(feed: &Feed, limitoutput: bool) -> String {
     while received_packages < total_pkg_count {
         let (a, req_res) = receive_package_delta(feed, batch_size, received_packages).await;
         if a != batch_size {
-            println!(
-                "receiving packages in batches of {} per request",
-                batch_size
-            );
+            println!("receiving packages in batches of {} per request", a);
         }
         batch_size = a;
         f.write_all(req_res.as_bytes())
