@@ -32,6 +32,11 @@ async fn main() {
                     Arg::with_name("limitoutput")
                         .short("r")
                         .help("limit the output to essential information"),
+                )
+                .arg(
+                    Arg::with_name("prerelease")
+                        .short("pre")
+                        .help("include prerelease versions"),
                 ),
         )
         .subcommand(
@@ -46,6 +51,11 @@ async fn main() {
                     Arg::with_name("fetch")
                         .short("f")
                         .help("fetch remote package index ('update')"),
+                )
+                .arg(
+                    Arg::with_name("prerelease")
+                        .short("pre")
+                        .help("include prerelease versions"),
                 ),
         )
         .get_matches();
@@ -58,12 +68,14 @@ async fn main() {
         println!("{}", rocolatey_lib::get_local_bad_packages_text(r));
     } else if let Some(matches) = matches.subcommand_matches("update") {
         let r = matches.is_present("limitoutput");
-        println!("{}", rocolatey_lib::update_package_index(r).await);
+        let pre = matches.is_present("prerelease");
+        println!("{}", rocolatey_lib::update_package_index(r, pre).await);
     } else if let Some(matches) = matches.subcommand_matches("outdated") {
         let r = matches.is_present("limitoutput");
+        let pre = matches.is_present("prerelease");
         if matches.is_present("fetch") {
-            println!("{}", rocolatey_lib::update_package_index(r).await);
+            println!("{}", rocolatey_lib::update_package_index(r, pre).await);
         }
-        println!("{}", rocolatey_lib::get_outdated_packages(r));
+        println!("{}", rocolatey_lib::get_outdated_packages(r, pre).await);
     }
 }

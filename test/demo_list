@@ -1,0 +1,1 @@
+ChocolateyInstall=fake_choco_home/ ../target/debug/roco list
