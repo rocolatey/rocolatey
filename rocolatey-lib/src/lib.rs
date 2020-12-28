@@ -147,13 +147,62 @@ pub struct Feed {
     url: String,
 }
 
+fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attributes) -> Feed {
+    let attrib_map = attrs
+        .map(|a| {
+            let a = a.unwrap();
+            (
+                String::from_utf8(Vec::from(a.key)).unwrap(),
+                String::from_utf8(Vec::from(a.value)).unwrap(),
+            )
+        })
+        .collect::<HashMap<String, String>>();
+
+    let name = attrib_map.get("id").unwrap();
+    let url = attrib_map.get("value").unwrap();
+
+    Feed {
+        name: name.clone(),
+        url: url.clone(),
+    }
+}
+
 fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
-    let mut s = Vec::new();
-    s.push(Feed {
-        name: String::from("chocolatey"),
-        url: String::from("https://chocolatey.org/api/v2"),
-    });
-    Ok(s)
+    let mut sources = Vec::new();
+    let choco_dir = get_chocolatey_dir().unwrap();
+    let mut cfg_dir = PathBuf::from(choco_dir);
+    cfg_dir.push("config/chocolatey.config");
+
+    for entry in glob(&cfg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => {
+                let mut reader = Reader::from_file(path).expect("failed to init xml reader");
+                reader.trim_text(true);
+                let mut buf = Vec::new();
+                loop {
+                    match reader.read_event(&mut buf) {
+                        Ok(Event::Empty(ref e)) => match e.name() {
+                            b"source" => {
+                                sources.push(get_feed_from_source_attribs(&mut e.attributes()));
+                            }
+                            _ => {}
+                        },
+                        Ok(Event::Start(ref e)) => match e.name() {
+                            b"source" => {
+                                sources.push(get_feed_from_source_attribs(&mut e.attributes()));
+                            }
+                            _ => {}
+                        },
+                        Ok(Event::Eof) => break,
+                        _ => (),
+                    }
+                    buf.clear();
+                }
+            }
+            Err(e) => println!("{:?}", e),
+        }
+    }
+    Ok(sources)
 }
 
 async fn get_package_count_on_feed(f: &Feed, prerelease: bool) -> u32 {
@@ -245,11 +294,37 @@ async fn get_latest_remote_packages_on_feed(
     feed: &Feed,
     prerelease: bool,
 ) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
-    let odata_xml = get_odata_xml_packages(pkgs, feed, prerelease)
-        .await
-        .expect("failed to receive odata for packages");
+    // else - recurse file search + filename analysis
+    let https_regex = regex::Regex::new(r"^https?://.+").unwrap();
+    match https_regex.is_match(&feed.url) {
+        true => {
+            let odata_xml = get_odata_xml_packages(pkgs, feed, prerelease)
+                .await
+                .expect("failed to receive odata for packages");
+            Ok(get_packages_from_odata(&odata_xml))
+        }
+        false => {
+            let nupkg_files = get_nupkgs_from_path(pkgs, feed, prerelease)
+                .expect("failed to read package info from file system");
+            Ok(get_packages_from_nupkg(&nupkg_files))
+        }
+    }
+}
 
-    Ok(get_packages_from_odata(&odata_xml))
+fn get_nupkgs_from_path(
+    pkgs: &Vec<Package>,
+    feed: &Feed,
+    prerelease: bool,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    println!("get_nupkgs_from_path NOT YET IMPLEMENTED!");
+    println!("only http / https - are evaluated");
+    // TODO implement
+    Ok(Vec::new())
+}
+
+fn get_packages_from_nupkg(nupkg_files: &Vec<String>) -> Vec<Package> {
+    // TODO implement
+    Vec::new()
 }
 
 async fn get_latest_remote_packages(
@@ -263,14 +338,14 @@ async fn get_latest_remote_packages(
         let pkgs = get_latest_remote_packages_on_feed(pkgs, f, prerelease)
             .await
             .expect("failed to get remote packages");
-        println!("{:#?}", pkgs);
+        // println!("{:#?}", pkgs);
         for p in pkgs {
             if remote_pkgs.contains_key(&p.id) {
                 if !semver_is_newer(&remote_pkgs.get(&p.id).unwrap().version, &p.version) {
                     continue;
                 }
             }
-            remote_pkgs.insert(p.id.clone(), p);
+            remote_pkgs.insert(p.id.to_lowercase(), p);
         }
     }
 
@@ -285,11 +360,9 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
         .await
         .expect("failed to get remote package list");
 
-    // TODO mw - ignore upper/lower case in package id
-
     let mut res = String::new();
     for l in local_packages {
-        let smart_bear = match latest_packages.get(&l.id) {
+        let smart_bear = match latest_packages.get(&l.id.to_lowercase()) {
             Some(u) => {
                 if semver_is_newer(&u.version, &l.version) {
                     res.push_str(&format!(
@@ -345,7 +418,7 @@ async fn get_odata_xml_packages(
             query_string.push_str(" or ");
         }
 
-        println!(" -> q: {}", query_string);
+        // println!(" -> q: {}", query_string);
 
         let resp_odata = reqwest::get(&query_string).await;
         let resp_odata = resp_odata.unwrap().text().await.unwrap();
@@ -439,8 +512,10 @@ fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
 }
 
 fn semver_is_newer(a: &str, b: &str) -> bool {
-    // TODO implement
-    false
+    let a = semver::Version::parse(a);
+    let b = semver::Version::parse(b);
+
+    a > b
 }
 
 // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
