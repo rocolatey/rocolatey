@@ -2,6 +2,8 @@ use warp::Filter;
 extern crate clap;
 use clap::{App, Arg};
 
+use rocolatey_lib::roco::local::{get_local_packages_text, get_local_bad_packages_text};
+
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey Server")
@@ -41,9 +43,9 @@ async fn main() {
 }
 
 fn req_local(limitoutput: bool) -> String {
-    rocolatey_lib::get_local_packages_text(limitoutput)
+    get_local_packages_text(limitoutput)
 }
 
 fn req_local_bad(limitoutput: bool) -> String {
-    rocolatey_lib::get_local_bad_packages_text(limitoutput)
+    get_local_bad_packages_text(limitoutput)
 }

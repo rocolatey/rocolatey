@@ -1,6 +1,9 @@
 extern crate clap;
 use clap::{App, Arg, SubCommand};
 
+use rocolatey_lib::roco::local::{get_local_bad_packages_text, get_local_packages_text};
+use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
+
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey")
@@ -26,8 +29,8 @@ async fn main() {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("update")
-                .about("update package index")
+            SubCommand::with_name("index")
+                .about("crate package index")
                 .arg(
                     Arg::with_name("limitoutput")
                         .short("r")
@@ -41,16 +44,11 @@ async fn main() {
         )
         .subcommand(
             SubCommand::with_name("outdated")
-                .about("compare local installed package versions with package index")
+                .about("Returns a list of outdated packages.")
                 .arg(
                     Arg::with_name("limitoutput")
                         .short("r")
                         .help("limit the output to essential information"),
-                )
-                .arg(
-                    Arg::with_name("fetch")
-                        .short("f")
-                        .help("fetch remote package index ('update')"),
                 )
                 .arg(
                     Arg::with_name("prerelease")
@@ -62,20 +60,17 @@ async fn main() {
 
     if let Some(matches) = matches.subcommand_matches("list") {
         let r = matches.is_present("limitoutput");
-        println!("{}", rocolatey_lib::get_local_packages_text(r));
+        println!("{}", get_local_packages_text(r));
     } else if let Some(matches) = matches.subcommand_matches("bad") {
         let r = matches.is_present("limitoutput");
-        println!("{}", rocolatey_lib::get_local_bad_packages_text(r));
-    } else if let Some(matches) = matches.subcommand_matches("update") {
+        println!("{}", get_local_bad_packages_text(r));
+    } else if let Some(matches) = matches.subcommand_matches("index") {
         let r = matches.is_present("limitoutput");
         let pre = matches.is_present("prerelease");
-        println!("{}", rocolatey_lib::update_package_index(r, pre).await);
+        println!("{}", update_package_index(r, pre).await);
     } else if let Some(matches) = matches.subcommand_matches("outdated") {
         let r = matches.is_present("limitoutput");
         let pre = matches.is_present("prerelease");
-        if matches.is_present("fetch") {
-            println!("{}", rocolatey_lib::update_package_index(r, pre).await);
-        }
-        println!("{}", rocolatey_lib::get_outdated_packages(r, pre).await);
+        println!("{}", get_outdated_packages(r, pre).await);
     }
 }
