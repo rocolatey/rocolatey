@@ -1,6 +1,6 @@
 # ROCOLATEY
 
-R(ocket-fast) (local) Chocolatey queries.
+R(ocket-fast) Chocolatey queries.
 
 * mimics output of Chocolatey commands (drop-in replacement)
 * doesn't make use of chocolatey or chocolatey.dll - just looks at the filesystem
