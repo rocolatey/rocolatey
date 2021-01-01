@@ -98,9 +98,20 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
         buf.clear();
     }
 
+    // 'pinned': $env:ChocolateyInstall\.chocolatey\<pkg_id>.<pkg_version>\.pin -> exists => true
+    let choco_dir = get_chocolatey_dir().unwrap();
+    let mut pinned_file = PathBuf::from(choco_dir);
+    pinned_file.push(".chocolatey");
+    pinned_file.push(format!(
+        "{}.{}",
+        pkg_name.to_string(),
+        pkg_version.to_string()
+    ));
+    pinned_file.push(".pin");
+
     Package {
         id: pkg_name.to_string(),
         version: pkg_version.to_string(),
-        pinned: false,
+        pinned: pinned_file.exists(),
     }
 }

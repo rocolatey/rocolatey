@@ -7,7 +7,7 @@ use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey")
-        .version("0.2.0")
+        .version("0.3.0")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides a basic interface for rocolatey-lib")
         .subcommand(
@@ -29,20 +29,6 @@ async fn main() {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("index")
-                .about("crate package index")
-                .arg(
-                    Arg::with_name("limitoutput")
-                        .short("r")
-                        .help("limit the output to essential information"),
-                )
-                .arg(
-                    Arg::with_name("prerelease")
-                        .short("pre")
-                        .help("include prerelease versions"),
-                ),
-        )
-        .subcommand(
             SubCommand::with_name("outdated")
                 .about("Returns a list of outdated packages.")
                 .arg(
@@ -56,6 +42,20 @@ async fn main() {
                         .help("include prerelease versions"),
                 ),
         )
+        /*.subcommand(
+            SubCommand::with_name("index")
+                .about("crate package index")
+                .arg(
+                    Arg::with_name("limitoutput")
+                        .short("r")
+                        .help("limit the output to essential information"),
+                )
+                .arg(
+                    Arg::with_name("prerelease")
+                        .short("pre")
+                        .help("include prerelease versions"),
+                ),
+        )*/
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("list") {

@@ -3,6 +3,7 @@ use quick_xml::Reader;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::path::PathBuf;
 
 use crate::roco::local::get_local_packages;
 use crate::roco::{get_choco_sources, semver_is_newer, Feed, OutdatedInfo, Package};
@@ -91,15 +92,17 @@ pub async fn update_package_index(limitoutput: bool, prerelease: bool) -> String
 }
 
 async fn get_latest_remote_packages_on_feed(
+  progress_bar: &indicatif::ProgressBar,
   pkgs: &Vec<Package>,
   feed: &Feed,
   prerelease: bool,
 ) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+  progress_bar.set_message(&format!("receive packages from '{}'", feed.name));
   // else - recurse file search + filename analysis
   let https_regex = regex::Regex::new(r"^https?://.+").unwrap();
   match https_regex.is_match(&feed.url) {
     true => {
-      let odata_xml = get_odata_xml_packages(pkgs, feed, prerelease)
+      let odata_xml = get_odata_xml_packages(progress_bar, pkgs, feed, prerelease)
         .await
         .expect("failed to receive odata for packages");
       Ok(get_packages_from_odata(&odata_xml))
@@ -107,7 +110,31 @@ async fn get_latest_remote_packages_on_feed(
     false => {
       let nupkg_files = get_nupkgs_from_path(pkgs, feed, prerelease)
         .expect("failed to read package info from file system");
-      Ok(get_packages_from_nupkg(&nupkg_files))
+      Ok(nupkg_files)
+    }
+  }
+}
+
+fn get_package_from_nupkg(filename: &str) -> Option<Package> {
+  // println!(" .. pkg from filename: {}", filename);
+  // TODO - is this sufficient? / do we need to extract the nuspec from the nupkg in order to get the id / version ?
+  let semver_regex = regex::Regex::new(r#"^(.+?)\.(((\d+\.?)+)(-.+)?)\.nupkg$"#).unwrap();
+  match semver_regex.captures(filename) {
+    Some(captures) => {
+      // println!("{:#?}", captures);
+      Some(Package {
+        id: captures
+          .get(1)
+          .map_or(String::from(""), |m| String::from(m.as_str())),
+        version: captures
+          .get(2)
+          .map_or(String::from(""), |m| String::from(m.as_str())),
+        pinned: false,
+      })
+    }
+    None => {
+      println!("ERROR: failed to get package from filename '{}'", filename);
+      None
     }
   }
 }
@@ -116,27 +143,43 @@ fn get_nupkgs_from_path(
   pkgs: &Vec<Package>,
   feed: &Feed,
   prerelease: bool,
-) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-  println!("! WARNING ! - get_nupkgs_from_path NOT YET IMPLEMENTED!");
-  println!("! WARNING ! - only http / https - are evaluated\n");
-  // TODO implement
-  Ok(Vec::new())
-}
+) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+  let mut feed_dir = PathBuf::from(&feed.url);
+  feed_dir.push("**/*.nupkg");
 
-fn get_packages_from_nupkg(nupkg_files: &Vec<String>) -> Vec<Package> {
-  // TODO implement
-  Vec::new()
+  let mut packages: Vec<Package> = Vec::new();
+  for entry in glob::glob(&feed_dir.to_string_lossy())? {
+    match get_package_from_nupkg(entry?.file_name().unwrap().to_str().unwrap()) {
+      Some(p) => {
+        let version = semver::Version::parse(&p.version).unwrap();
+        if !prerelease && version.is_prerelease() {
+          continue;
+        }
+        if pkgs
+          .iter()
+          .any(|s| s.id.to_lowercase() == p.id.to_lowercase())
+        {
+          packages.push(p);
+        }
+      }
+      None => {}
+    }
+  }
+
+  Ok(packages)
 }
 
 async fn get_latest_remote_packages(
+  progress_bar: &indicatif::ProgressBar,
   pkgs: &Vec<Package>,
   feeds: &Vec<Feed>,
   prerelease: bool,
 ) -> Result<HashMap<String, Package>, Box<dyn std::error::Error>> {
   let mut remote_pkgs: HashMap<String, Package> = HashMap::new();
+  //progress_bar.println("receiving package info from remote feeds...");
 
   for f in feeds {
-    let pkgs = get_latest_remote_packages_on_feed(pkgs, f, prerelease)
+    let pkgs = get_latest_remote_packages_on_feed(progress_bar, pkgs, f, prerelease)
       .await
       .expect("failed to get remote packages");
     // println!("{:#?}", pkgs);
@@ -157,9 +200,22 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
   // foreach local package, compare remote version number
   let local_packages = get_local_packages().expect("failed to get local package list");
   let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
-  let latest_packages = get_latest_remote_packages(&local_packages, &remote_feeds, prerelease)
-    .await
-    .expect("failed to get remote package list");
+  let progress_bar = match limitoutput {
+    true => indicatif::ProgressBar::hidden(),
+    false => indicatif::ProgressBar::new(local_packages.len() as u64),
+  };
+  progress_bar.set_style(
+    indicatif::ProgressStyle::default_bar()
+      .template("[{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {msg}")
+      .progress_chars("=>-"),
+  );
+  progress_bar.enable_steady_tick(500);
+  let latest_packages =
+    get_latest_remote_packages(&progress_bar, &local_packages, &remote_feeds, prerelease)
+      .await
+      .expect("failed to get remote package list");
+
+  progress_bar.finish_with_message("received remote package information");
 
   let mut oi: Vec<OutdatedInfo> = Vec::new();
   let mut warning_count = 0;
@@ -188,6 +244,9 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
       }
     };
   }
+
+  oi.sort_by(|a, b| a.id.to_lowercase().cmp(&b.id.to_lowercase()));
+
   let mut warnings = String::new();
   let mut res = String::new();
 
@@ -221,6 +280,7 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
 }
 
 async fn get_odata_xml_packages(
+  progress_bar: &indicatif::ProgressBar,
   pkgs: &Vec<Package>,
   feed: &Feed,
   prerelease: bool,
@@ -264,6 +324,7 @@ async fn get_odata_xml_packages(
     // note: not all queried pkgs have to exist on remote, thus we always need to inc batch_size,
     // no matter if the queried pkgs were received or not!
     received_pkgs += batch_size;
+    progress_bar.set_position(received_pkgs as u64);
   }
 
   Ok(query_res)
