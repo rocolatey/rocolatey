@@ -12,13 +12,29 @@ use crate::roco::{get_choco_sources, semver_is_newer, Feed, OutdatedInfo, Packag
 // https://joelverhagen.github.io/NuGetUndocs/
 // http://docs.oasis-open.org/odata/odata/v4.0/errata03/os/complete/part1-protocol/odata-v4.0-errata03-os-part1-protocol-complete.html
 
+fn build_reqwest(feed: &Feed) -> reqwest::Client {
+  let mut rbuilder = reqwest::Client::builder();
+  if feed.proxy.is_some() {
+    let proxy = feed.proxy.as_ref().unwrap();
+    let mut rproxy = reqwest::Proxy::all(&proxy.url).unwrap();
+    if proxy.credential.is_some() {
+      let credential = proxy.credential.as_ref().unwrap();
+      rproxy = rproxy.basic_auth(&credential.user, &credential.pass);
+    }
+    rbuilder = rbuilder.proxy(rproxy);
+  }
+  rbuilder.build().unwrap()
+}
+
 async fn get_package_count_on_feed(f: &Feed, prerelease: bool) -> u32 {
   let latest_filter = match prerelease {
     true => "$filter=IsAbsoluteLatestVersion",
     false => "$filter=IsLatestVersion",
   };
   let rs = format!("{}/Packages()/$count?{}", f.url, latest_filter);
-  let resp_pkg_count = reqwest::get(&rs).await;
+
+  let client = build_reqwest(&f);
+  let resp_pkg_count = client.get(&rs).send().await;
   let total_pkg_count = resp_pkg_count.unwrap().text().await.unwrap();
   let total_pkg_count = total_pkg_count.parse::<u32>().unwrap();
   total_pkg_count
@@ -43,7 +59,8 @@ async fn receive_package_delta(
     ),
   };
   // println!("q: {}", rs);
-  let resp = reqwest::get(&rs).await;
+  let client = build_reqwest(&feed);
+  let resp = client.get(&rs).send().await;
   let query_res = resp.unwrap().text().await.unwrap();
   let c = query_res.matches("</entry>").count();
   (c as u32, query_res)
@@ -317,8 +334,8 @@ async fn get_odata_xml_packages(
     }
 
     // println!(" -> q: {}", query_string);
-
-    let resp_odata = reqwest::get(&query_string).await;
+    let client = build_reqwest(&feed);
+    let resp_odata = client.get(&query_string).send().await;
     let resp_odata = resp_odata.unwrap().text().await.unwrap();
     query_res.push_str(&resp_odata);
     // note: not all queried pkgs have to exist on remote, thus we always need to inc batch_size,
