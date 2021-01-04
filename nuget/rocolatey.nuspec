@@ -3,21 +3,22 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>rocolatey</id>
-    <title>rocolatey</title>
-    <version>0.1.0</version>
+    <title>ROCO(latey)</title>
+    <version>0.4.0</version>
     <authors>Manfred Wallner</authors>
     <owners>Manfred Wallner</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <summary>blazing fast local Chocolatey queries</summary>
+    <summary>blazing fast Chocolatey queries</summary>
     <description>
       querying the list of local installed Chocolatey packages, 100 times faster than `choco list -lo`.
+      check for outdated packages in a matter of seconds rather than minutes.
     </description>
-    <copyright>Copyright (c) 2020 Manfred Wallner</copyright>
+    <copyright>Copyright (c) 2021 Manfred Wallner</copyright>
     <projectUrl>https://github.com/mwallner/rocolatey</projectUrl>
     <licenseUrl>https://raw.githubusercontent.com/mwallner/rocolatey/master/LICENSE</licenseUrl>
     <iconUrl>https://raw.githubusercontent.com/mwallner/rocolatey/master/rocolatey.png</iconUrl>
     <language>en-US</language>
-    <tags>chocolatey local</tags>
+    <tags>chocolatey local tool roco</tags>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />

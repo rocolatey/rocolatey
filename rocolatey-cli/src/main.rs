@@ -7,7 +7,7 @@ use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey")
-        .version("0.3.0")
+        .version("0.4.0")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides a basic interface for rocolatey-lib")
         .subcommand(

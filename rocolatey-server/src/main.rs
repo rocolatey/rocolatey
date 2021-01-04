@@ -2,7 +2,7 @@ use warp::Filter;
 extern crate clap;
 use clap::{App, Arg};
 
-use rocolatey_lib::roco::local::{get_local_packages_text, get_local_bad_packages_text};
+use rocolatey_lib::roco::local::{get_local_bad_packages_text, get_local_packages_text};
 
 #[tokio::main]
 async fn main() {
