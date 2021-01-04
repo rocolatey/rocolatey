@@ -36,6 +36,20 @@ impl Package {
 pub struct Feed {
     pub name: String,
     pub url: String,
+    pub credential: Option<Credential>,
+    pub proxy: Option<ProxySettings>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Credential {
+    pub user: String,
+    pub pass: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProxySettings {
+    pub url: String,
+    pub credential: Option<Credential>,
 }
 
 #[derive(Debug, Clone)]
@@ -74,10 +88,24 @@ fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attri
 
     let name = attrib_map.get("id").unwrap();
     let url = attrib_map.get("value").unwrap();
+    let user = attrib_map.get("user");
+    let password = attrib_map.get("password");
+
+    let cred = match user.is_some() && password.is_some() {
+        true => Some(Credential {
+            user: user.unwrap().clone(),
+            pass: password.unwrap().clone(),
+        }),
+        false => None
+    };
+
+    // TODO set proxy data
 
     Feed {
         name: name.clone(),
         url: url.clone(),
+        credential: cred,
+        proxy: None,
     }
 }
 

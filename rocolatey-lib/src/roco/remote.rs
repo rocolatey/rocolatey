@@ -317,7 +317,7 @@ async fn get_odata_xml_packages(
     }
 
     // println!(" -> q: {}", query_string);
-
+    
     let resp_odata = reqwest::get(&query_string).await;
     let resp_odata = resp_odata.unwrap().text().await.unwrap();
     query_res.push_str(&resp_odata);
