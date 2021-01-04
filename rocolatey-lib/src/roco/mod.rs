@@ -75,8 +75,10 @@ pub fn get_chocolatey_dir() -> Result<String, std::env::VarError> {
     }
 }
 
-fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attributes) -> Feed {
-    let attrib_map = attrs
+fn xml_attribs_to_map(
+    attrs: &mut quick_xml::events::attributes::Attributes,
+) -> HashMap<String, String> {
+    attrs
         .map(|a| {
             let a = a.unwrap();
             (
@@ -84,7 +86,11 @@ fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attri
                 String::from_utf8(Vec::from(a.value)).unwrap(),
             )
         })
-        .collect::<HashMap<String, String>>();
+        .collect::<HashMap<String, String>>()
+}
+
+fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attributes) -> Feed {
+    let attrib_map = xml_attribs_to_map(attrs);
 
     let name = attrib_map.get("id").unwrap();
     let url = attrib_map.get("value").unwrap();
@@ -96,10 +102,8 @@ fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attri
             user: user.unwrap().clone(),
             pass: password.unwrap().clone(),
         }),
-        false => None
+        false => None,
     };
-
-    // TODO set proxy data
 
     Feed {
         name: name.clone(),
@@ -109,11 +113,24 @@ fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attri
     }
 }
 
+fn get_config_settings_from_attribs(
+    config_settings: &mut HashMap<String, String>,
+    attrs: &mut quick_xml::events::attributes::Attributes,
+) {
+    let attrib_map = xml_attribs_to_map(attrs);
+    let val = attrib_map.get("value");
+    if val.is_some() {
+        config_settings.insert(attrib_map.get("key").unwrap().clone(), val.unwrap().clone());
+    }
+}
+
 fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     let mut sources = Vec::new();
     let choco_dir = get_chocolatey_dir().unwrap();
     let mut cfg_dir = PathBuf::from(choco_dir);
     cfg_dir.push("config/chocolatey.config");
+
+    let mut config_settings: HashMap<String, String> = HashMap::new();
 
     for entry in glob::glob(&cfg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
         match entry {
@@ -127,11 +144,23 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
                             b"source" => {
                                 sources.push(get_feed_from_source_attribs(&mut e.attributes()));
                             }
+                            b"add" => {
+                                get_config_settings_from_attribs(
+                                    &mut config_settings,
+                                    &mut e.attributes(),
+                                );
+                            }
                             _ => {}
                         },
                         Ok(Event::Start(ref e)) => match e.name() {
                             b"source" => {
                                 sources.push(get_feed_from_source_attribs(&mut e.attributes()));
+                            }
+                            b"add" => {
+                                get_config_settings_from_attribs(
+                                    &mut config_settings,
+                                    &mut e.attributes(),
+                                );
                             }
                             _ => {}
                         },
@@ -144,5 +173,32 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
             Err(e) => println!("{:?}", e),
         }
     }
-    Ok(sources)
+    // println!("{:#?}", config_settings);
+    if config_settings.get("proxy").is_some() {}
+    let proxy_config = match config_settings.get("proxy") {
+        Some(proxy_url) => match proxy_url.is_empty() {
+            true => None,
+            false => Some(ProxySettings {
+                url: proxy_url.clone(),
+                credential: match config_settings.get("proxyUser") {
+                    Some(proxy_user) => Some(Credential {
+                        user: proxy_user.clone(),
+                        pass: match config_settings.get("proxyPassword") {
+                            Some(proxy_pass) => proxy_pass.clone(),
+                            None => String::new(),
+                        },
+                    }),
+                    None => None,
+                },
+            }),
+        },
+        None => None,
+    };
+
+    let mut sources_with_proxy = Vec::new();
+    for mut s in sources {
+        s.proxy = proxy_config.clone();
+        sources_with_proxy.push(s);
+    }
+    Ok(sources_with_proxy)
 }
