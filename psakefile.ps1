@@ -5,6 +5,7 @@ task Build {
 
 task Pack -Depends Build {
   Copy-Item ./target/release/*.exe nuget/tools/.
+  Copy-Item ./LICENSE.txt nuget/tools/.
   choco pack nuget/rocolatey.nuspec
 }
 

@@ -1,0 +1,7 @@
+﻿VERIFICATION
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+
+I am the author of this software.
+
+The checksums of the files included should match the corresponding version on https://github.com/mwallner/rocolatey/releases

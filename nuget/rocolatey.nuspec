@@ -16,7 +16,7 @@
     <copyright>Copyright (c) 2021 Manfred Wallner</copyright>
     <projectUrl>https://github.com/mwallner/rocolatey</projectUrl>
     <licenseUrl>https://raw.githubusercontent.com/mwallner/rocolatey/master/LICENSE</licenseUrl>
-    <iconUrl>https://raw.githubusercontent.com/mwallner/rocolatey/master/rocolatey.png</iconUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/mwallner/rocolatey/roco.png</iconUrl>
     <language>en-US</language>
     <tags>chocolatey local tool roco</tags>
   </metadata>
