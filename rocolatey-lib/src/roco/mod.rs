@@ -38,6 +38,12 @@ pub struct Feed {
     pub url: String,
     pub credential: Option<Credential>,
     pub proxy: Option<ProxySettings>,
+    pub disabled: bool,
+    pub certificate: Option<String>,
+    pub bypass_proxy: bool,
+    pub self_service: bool,
+    pub admin_only: bool,
+    pub priority: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -94,12 +100,10 @@ fn get_feed_from_source_attribs(
 ) -> Option<Feed> {
     let attrib_map = xml_attribs_to_map(attrs);
 
-    let disabled = attrib_map.get("disabled");
-    if disabled.is_some() {
-        if disabled.unwrap() == "true" {
-            return None;
-        }
-    }
+    let disabled = match attrib_map.get("disabled") {
+        Some(attrib_value) => attrib_value == "true",
+        None => false,
+    };
 
     let name = attrib_map.get("id").unwrap();
     let url = attrib_map.get("value").unwrap();
@@ -119,6 +123,13 @@ fn get_feed_from_source_attribs(
         url: url.clone(),
         credential: cred,
         proxy: None,
+        disabled: disabled,
+        // TODO set actual values!
+        certificate: None,
+        bypass_proxy: false,
+        self_service: false,
+        admin_only: false,
+        priority: 0,
     })
 }
 

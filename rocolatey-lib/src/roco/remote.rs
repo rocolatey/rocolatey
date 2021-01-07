@@ -102,7 +102,7 @@ async fn update_feed_index(feed: &Feed, limitoutput: bool, prerelease: bool) -> 
 pub async fn update_package_index(limitoutput: bool, prerelease: bool) -> String {
   let mut s = String::new();
   let feeds = get_choco_sources().expect("failed to get choco sources");
-  for f in feeds {
+  for f in feeds.into_iter().filter(|f| f.disabled == false) {
     s.push_str(&update_feed_index(&f, limitoutput, prerelease).await);
   }
   s
@@ -217,6 +217,7 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
   // foreach local package, compare remote version number
   let local_packages = get_local_packages().expect("failed to get local package list");
   let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
+  let remote_feeds = remote_feeds.into_iter().filter(|f| f.disabled == false).collect();
   let progress_bar = match limitoutput {
     true => indicatif::ProgressBar::hidden(),
     false => indicatif::ProgressBar::new(local_packages.len() as u64),

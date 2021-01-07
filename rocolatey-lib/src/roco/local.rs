@@ -3,7 +3,7 @@ use quick_xml::Reader;
 
 use std::path::PathBuf;
 
-use crate::roco::{get_chocolatey_dir, NuspecTag, Package};
+use crate::roco::{get_choco_sources, get_chocolatey_dir, NuspecTag, Package};
 
 pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
     let mut pkgs: Vec<Package> = Vec::new();
@@ -54,6 +54,73 @@ pub fn get_local_bad_packages_text(limitoutput: bool) -> String {
     if !limitoutput {
         res.push_str(&format!("\r\n{} packages in lib-bad.", num_packages));
     }
+    res
+}
+
+pub fn get_sources_text(limitoutput: bool) -> String {
+    let mut res = String::new();
+    let sources = get_choco_sources().unwrap();
+
+    fn c_bool(v: bool) -> &'static str {
+        match v {
+            true => "True",
+            false => "False",
+        }
+    }
+
+    let num_iterations = sources.len() - 1;
+    for (i, f) in sources.iter().enumerate() {
+        res.push_str(
+            &(match limitoutput {
+                true => {
+                    let user = match &f.credential {
+                        Some(auth) => auth.user.clone(),
+                        None => String::new(),
+                    };
+                    let certificate = (f.certificate.as_ref().unwrap_or(&String::new())).clone();
+                    format!(
+                        "{}|{}|{}|{}|{}|{}|{}|{}|{}",
+                        f.name,
+                        f.url,
+                        c_bool(f.disabled),
+                        user,
+                        certificate,
+                        f.priority,
+                        c_bool(f.bypass_proxy),
+                        c_bool(f.self_service),
+                        c_bool(f.admin_only),
+                    )
+                }
+                false => {
+                    let name_1 = match f.disabled {
+                        true => format!("{} [Disabled]", f.name),
+                        false => f.name.clone(),
+                    };
+                    let name_2 = match &f.credential {
+                        Some(_) => {
+                            format!("{} (Authenticated)", f.url)
+                        }
+                        None => {
+                            format!("{} ", f.url)
+                        }
+                    };
+                    format!(
+                        "{} - {}| Priority {}|Bypass Proxy - {}|Self-Service - {}|Admin Only - {}.",
+                        name_1,
+                        name_2,
+                        f.priority,
+                        c_bool(f.bypass_proxy),
+                        c_bool(f.self_service),
+                        c_bool(f.admin_only)
+                    )
+                }
+            }),
+        );
+        if i < num_iterations {
+            res.push_str("\r\n");
+        }
+    }
+
     res
 }
 

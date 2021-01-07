@@ -1,13 +1,15 @@
 extern crate clap;
 use clap::{App, Arg, SubCommand};
 
-use rocolatey_lib::roco::local::{get_local_bad_packages_text, get_local_packages_text};
+use rocolatey_lib::roco::local::{
+    get_local_bad_packages_text, get_local_packages_text, get_sources_text,
+};
 use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
 
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey")
-        .version("0.4.0")
+        .version("0.5.0-beta1")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides a basic interface for rocolatey-lib")
         .subcommand(
@@ -42,6 +44,15 @@ async fn main() {
                         .help("include prerelease versions"),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("source")
+                .about("list choco sources")
+                .arg(
+                    Arg::with_name("limitoutput")
+                        .short("r")
+                        .help("limit the output to essential information"),
+                ),
+        )
         /*.subcommand(
             SubCommand::with_name("index")
                 .about("crate package index")
@@ -72,5 +83,8 @@ async fn main() {
         let r = matches.is_present("limitoutput");
         let pre = matches.is_present("prerelease");
         println!("{}", get_outdated_packages(r, pre).await);
+    } else if let Some(matches) = matches.subcommand_matches("source") {
+        let r = matches.is_present("limitoutput");
+        println!("{}", get_sources_text(r));
     }
 }
