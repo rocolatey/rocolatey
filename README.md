@@ -23,12 +23,13 @@ In addition to that, there may be some hidden gems that are only available in ro
 
 It very much depends on the number of installed packages and configured feeds, generally speaking roco should be at least three times faster than choco, but it gets even better when dealing with many packages and repositories.
 
-| Command                             | #Packages | #Feeds |    Choco |     Roco |
-| ----------------------------------- | :-------: | :----: | -------: | -------: |
-| `choco list -lo` vs `roco list`     |    150    |   2    |  8.2 sec | 0.15 sec |
-| `choco list -lo` vs `roco list`     |    231    |   5    |  6.6 sec | 0.21 sec |
-| `choco outdated` vs `roco outdated` |    150    |   2    | 97.6 sec | 12.2 sec |
-| `choco outdated` vs `roco outdated` |    231    |   5    | 90.6 sec | 8.36 sec |
+| Command                              | #Packages | #Feeds |    Choco |     Roco |
+| ------------------------------------ | :-------: | :----: | -------: | -------: |
+| `choco list -lo` vs `roco list`      |    150    |   2    |  8.2 sec | 0.15 sec |
+| `choco list -lo` vs `roco list`      |    231    |   5    |  6.6 sec | 0.21 sec |
+| `choco outdated` vs `roco outdated`  |    150    |   2    | 97.6 sec | 12.2 sec |
+| `choco outdated` vs `roco outdated`  |    231    |   5    | 90.6 sec | 8.36 sec |
+| `choco source list` vs `roco source` |    150    |   3    | 4.26 sec | 0.02 sec |
 
 ## rocolatey-cli ("roco")
 
