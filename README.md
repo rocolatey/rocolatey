@@ -21,7 +21,7 @@ Take a look at the help (`roco -h`), basically roco allows you to [list installe
 In addition to that, there may be some hidden gems that are only available in roco, but not in vanilla Chocolatey.
 
 Normally you should not run multiple Chocolatey instances at the same time, however this may be required in certain scenarios.
-If you wanted to check if updates are available, or simply list all configured sources, roco is there to help you out without worring of breaking something because you accidentally called choco in parallel.
+If you wanted to check if updates are available, or simply list all configured sources, roco is there to help you out without worrying of breaking something because you accidentally called choco in parallel.
 
 > ***seriously, why are you doing this?***
 
