@@ -89,8 +89,17 @@ fn xml_attribs_to_map(
         .collect::<HashMap<String, String>>()
 }
 
-fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attributes) -> Feed {
+fn get_feed_from_source_attribs(
+    attrs: &mut quick_xml::events::attributes::Attributes,
+) -> Option<Feed> {
     let attrib_map = xml_attribs_to_map(attrs);
+
+    let disabled = attrib_map.get("disabled");
+    if disabled.is_some() {
+        if disabled.unwrap() == "true" {
+            return None;
+        }
+    }
 
     let name = attrib_map.get("id").unwrap();
     let url = attrib_map.get("value").unwrap();
@@ -105,12 +114,12 @@ fn get_feed_from_source_attribs(attrs: &mut quick_xml::events::attributes::Attri
         false => None,
     };
 
-    Feed {
+    Some(Feed {
         name: name.clone(),
         url: url.clone(),
         credential: cred,
         proxy: None,
-    }
+    })
 }
 
 fn get_config_settings_from_attribs(
@@ -196,9 +205,14 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     };
 
     let mut sources_with_proxy = Vec::new();
-    for mut s in sources {
-        s.proxy = proxy_config.clone();
-        sources_with_proxy.push(s);
+    for s in sources {
+        match s {
+            Some(mut feed) => {
+                feed.proxy = proxy_config.clone();
+                sources_with_proxy.push(feed);
+            }
+            None => {}
+        }
     }
     Ok(sources_with_proxy)
 }
