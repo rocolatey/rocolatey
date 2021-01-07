@@ -1,0 +1,7 @@
+[rocolatey-*\Cargo.toml | toml]
+regex = ^version = "(?<version>.*)"$
+
+[rocolatey-*\**\main.rs | clap_app]
+regex = .*\.version\("(?<version>.*)"\)
+
+[nuget\**\*.nuspec | nuspec]
