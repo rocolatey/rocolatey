@@ -11,6 +11,6 @@ task Pack -Depends Build {
 
 task Clean {
   Remove-Item ./target/release/* -recurse -ErrorAction SilentlyContinue
-  Remove-Item nuget/tools/* -ErrorAction SilentlyContinue
+  Remove-Item nuget/tools/*.exe -ErrorAction SilentlyContinue
   cargo clean
 }
