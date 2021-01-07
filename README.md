@@ -21,7 +21,9 @@ It very much depends on the number of installed packages and configured feeds, g
 | Command                             | #Packages | #Feeds |    Choco |     Roco |
 | ----------------------------------- | :-------: | :----: | -------: | -------: |
 | `choco list -lo` vs `roco list`     |    150    |   2    |  8.2 sec | 0.15 sec |
+| `choco list -lo` vs `roco list`     |    231    |   5    |  6.6 sec | 0.21 sec |
 | `choco outdated` vs `roco outdated` |    150    |   2    | 97.6 sec | 12.2 sec |
+| `choco outdated` vs `roco outdated` |    231    |   5    | 90.6 sec | 8.36 sec |
 
 ## rocolatey-cli ("roco")
 
