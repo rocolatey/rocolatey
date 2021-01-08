@@ -167,12 +167,26 @@ fn get_feed_from_source_attribs(
         credential: cred,
         proxy: None,
         disabled: disabled,
-        // TODO set actual values!
-        certificate: None,
-        bypass_proxy: false,
-        self_service: false,
-        admin_only: false,
-        priority: 0,
+        certificate: match attrib_map.get("certificate") {
+            Some(c) => Some(c.clone()),
+            None => None,
+        },
+        bypass_proxy: match attrib_map.get("bypass_proxy") {
+            Some(c) => c == "true",
+            None => false,
+        },
+        self_service: match attrib_map.get("self_service") {
+            Some(c) => c == "true",
+            None => false,
+        },
+        admin_only: match attrib_map.get("admin_only") {
+            Some(c) => c == "true",
+            None => false,
+        },
+        priority: match attrib_map.get("priority") {
+            Some(c) => c.parse::<i64>().unwrap_or(0),
+            None => 0,
+        },
     })
 }
 
