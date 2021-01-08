@@ -299,7 +299,7 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
       outdated_packages
     ));
     if warning_count > 0 {
-      res.push_str(&format!(" {} packages(s) had warnings.\n", warning_count));
+      res.push_str(&format!(" {} package(s) had warnings.\n", warning_count));
       res.push_str(&format!("Warnings:\n"));
       res.push_str(&warnings);
     }
