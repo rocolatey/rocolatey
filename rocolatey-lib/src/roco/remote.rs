@@ -202,7 +202,8 @@ async fn get_latest_remote_packages(
     // println!("{:#?}", pkgs);
     for p in pkgs {
       if remote_pkgs.contains_key(&p.id) {
-        if !semver_is_newer(&remote_pkgs.get(&p.id).unwrap().version, &p.version) {
+        let remote_version = &remote_pkgs.get(&p.id).unwrap().version;
+        if !semver_is_newer(remote_version, &p.version) {
           continue;
         }
       }
@@ -217,7 +218,10 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
   // foreach local package, compare remote version number
   let local_packages = get_local_packages().expect("failed to get local package list");
   let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
-  let remote_feeds = remote_feeds.into_iter().filter(|f| f.disabled == false).collect();
+  let remote_feeds = remote_feeds
+    .into_iter()
+    .filter(|f| f.disabled == false)
+    .collect();
   let progress_bar = match limitoutput {
     true => indicatif::ProgressBar::hidden(),
     false => indicatif::ProgressBar::new(local_packages.len() as u64),
@@ -246,6 +250,7 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
             local_version: l.version.clone(),
             remote_version: u.version.clone(),
             pinned: l.pinned,
+            outdated: true,
             exists_on_remote: true,
           });
         }
@@ -257,6 +262,7 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
           local_version: l.version.clone(),
           remote_version: l.version.clone(),
           pinned: l.pinned,
+          outdated: false,
           exists_on_remote: false,
         })
       }
@@ -275,7 +281,9 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
 
   let mut outdated_packages = 0;
   for o in oi {
-    outdated_packages += 1;
+    if o.outdated {
+      outdated_packages += 1;
+    }
     res.push_str(&format!(
       "{}|{}|{}|{}\n",
       o.id, o.local_version, o.remote_version, o.pinned
@@ -290,9 +298,11 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
       "\nRocolatey has determined {} package(s) are outdated.\n",
       outdated_packages
     ));
-    res.push_str(&format!(" {} packages(s) had warnings.\n", warning_count));
-    res.push_str(&format!("Warnings:\n"));
-    res.push_str(&warnings);
+    if warning_count > 0 {
+      res.push_str(&format!(" {} packages(s) had warnings.\n", warning_count));
+      res.push_str(&format!("Warnings:\n"));
+      res.push_str(&warnings);
+    }
   }
   res
 }
@@ -317,17 +327,26 @@ async fn get_odata_xml_packages(
 
   // NOTE: some feeds may have pagination (such as choco community repo)
   // need to impl some way to determine maximum possible batch_size!
-  let max_batch_size = 39;
+  let max_batch_size = 25;
 
   while received_pkgs < total_pkgs {
     let mut query_string = format!("{} and (", query_string_base);
     let mut batch_size = 0;
     loop {
-      query_string.push_str(&format!("Id eq '{}'", pkgs.get(curr_pkg_idx).unwrap().id));
+      let curr_pkg = pkgs.get(curr_pkg_idx).unwrap();
+      // query_string.push_str(&format!("(Id eq '{}' or Id eq '{}')", curr_pkg.id, curr_pkg.id.to_lowercase()));
+      query_string.push_str(&format!(
+        "(tolower(Id) eq '{}')",
+        curr_pkg.id.to_lowercase()
+      ));
       curr_pkg_idx += 1;
       batch_size += 1;
 
-      if (query_string.len() > 2000) || curr_pkg_idx == pkgs.len() || batch_size >= max_batch_size {
+      let url = reqwest::Url::parse(&query_string);
+      if (url.unwrap().as_str().len() > 2000)
+        || curr_pkg_idx == pkgs.len()
+        || batch_size >= max_batch_size
+      {
         query_string.push_str(")");
         break;
       }
