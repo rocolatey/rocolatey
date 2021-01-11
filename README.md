@@ -1,5 +1,7 @@
 # ROCOLATEY
 
+![Build Pipeline Badge](https://github.com/mwallner/rocolatey/workflows/Rust-Build-Pipeline/badge.svg)
+
 > ***What is Rocolatey?***
 
 R(ocket-fast) [Chocolatey](https://chocolatey.org/) queries.
