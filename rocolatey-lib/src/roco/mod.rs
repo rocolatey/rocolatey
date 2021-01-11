@@ -68,6 +68,14 @@ pub struct OutdatedInfo {
     pub exists_on_remote: bool,
 }
 
+fn my_semver_get_v_part(v: &str) -> i32 {
+    let v_parts: Vec<&str> = v.split("-").collect();
+    match v_parts.get(0) {
+        Some(v) => v.parse::<i32>().unwrap_or(0),
+        None => 0,
+    }
+}
+
 fn my_semver_is_newer(a: &str, b: &str) -> bool {
     let a_parts: Vec<&str> = a.split(".").collect();
     let b_parts: Vec<&str> = b.split(".").collect();
@@ -76,15 +84,16 @@ fn my_semver_is_newer(a: &str, b: &str) -> bool {
         if b_parts.len() <= i {
             return true;
         }
+        let v_b = b_parts.get(i).unwrap();
         let n_a = v_a.parse::<i32>();
-        let n_b = b_parts.get(i).unwrap().parse::<i32>();
+        let n_b = v_b.parse::<i32>();
         if n_a.is_ok() && n_b.is_err() {
             // a is digit, b is something else
-            return true;
+            return n_a.unwrap() > my_semver_get_v_part(v_b);
         }
         if n_a.is_err() && n_b.is_ok() {
             // a is not a digit, but b is
-            return false;
+            return my_semver_get_v_part(v_a) > n_b.unwrap();
         }
         if n_a.is_ok() && n_b.is_ok() {
             let n_a = n_a.unwrap();
@@ -296,6 +305,8 @@ mod tests {
         assert!(semver_is_newer("2.0.2", "1.12.0"));
         assert!(semver_is_newer("1.2.3.4", "1.2.3"));
         assert!(semver_is_newer("1.1.0-alpha", "1.0.0"));
+        assert!(semver_is_newer("1.11-alpha", "1.07"));
+        assert!(semver_is_newer("1.11", "1.07-alpha"));
         assert!(semver_is_newer("1.1.0-beta2", "1.1.0-beta1"));
         assert!(semver_is_newer("1.1.0-beta2", "1.1.0-beta14")); // this is weird, but matches choco behavior
         assert!(!semver_is_newer("1.12.0", "2.0.2"));
