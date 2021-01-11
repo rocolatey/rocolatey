@@ -1,0 +1,24 @@
+name: Rust-Build-Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build on ${{ matrix.os }}
+      run: cargo build --verbose
+    - name: Run tests on ${{ matrix.os }}
+      run: cargo test --verbose
