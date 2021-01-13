@@ -1,6 +1,6 @@
 [package]
 name = "roco"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
 edition = "2018"
 
