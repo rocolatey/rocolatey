@@ -9,7 +9,7 @@ use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey")
-        .version("0.5.0")
+        .version("0.5.1")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides a basic interface for rocolatey-lib")
         .subcommand(
@@ -71,10 +71,10 @@ async fn main() {
 
     if let Some(matches) = matches.subcommand_matches("list") {
         let r = matches.is_present("limitoutput");
-        println!("{}", get_local_packages_text(r));
+        print!("{}", get_local_packages_text(r));
     } else if let Some(matches) = matches.subcommand_matches("bad") {
         let r = matches.is_present("limitoutput");
-        println!("{}", get_local_bad_packages_text(r));
+        print!("{}", get_local_bad_packages_text(r));
     } else if let Some(matches) = matches.subcommand_matches("index") {
         let r = matches.is_present("limitoutput");
         let pre = matches.is_present("prerelease");
@@ -82,9 +82,9 @@ async fn main() {
     } else if let Some(matches) = matches.subcommand_matches("outdated") {
         let r = matches.is_present("limitoutput");
         let pre = matches.is_present("prerelease");
-        println!("{}", get_outdated_packages(r, pre).await);
+        print!("{}", get_outdated_packages(r, pre).await);
     } else if let Some(matches) = matches.subcommand_matches("source") {
         let r = matches.is_present("limitoutput");
-        println!("{}", get_sources_text(r));
+        print!("{}", get_sources_text(r));
     }
 }

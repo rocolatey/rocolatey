@@ -4,7 +4,7 @@
   <metadata>
     <id>rocolatey</id>
     <title>ROCO(latey)</title>
-    <version>0.5.0</version>
+    <version>0.5.1</version>
     <authors>Manfred Wallner</authors>
     <owners>Manfred Wallner</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -19,6 +19,9 @@
     <iconUrl>https://cdn.jsdelivr.net/gh/mwallner/rocolatey/roco.png</iconUrl>
     <language>en-US</language>
     <tags>chocolatey local tool roco</tags>
+    <dependencies>
+      <dependency id="vcredist140"/>
+    </dependencies>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
