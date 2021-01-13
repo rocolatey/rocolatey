@@ -19,6 +19,9 @@
     <iconUrl>https://cdn.jsdelivr.net/gh/mwallner/rocolatey/roco.png</iconUrl>
     <language>en-US</language>
     <tags>chocolatey local tool roco</tags>
+    <dependencies>
+      <dependency id="vcredist140"/>
+    </dependencies>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
