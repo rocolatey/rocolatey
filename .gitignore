@@ -4,3 +4,4 @@
 *.nupkg
 nuget/tools/*.exe
 nuget/tools/LICENSE.txt
+*.zip

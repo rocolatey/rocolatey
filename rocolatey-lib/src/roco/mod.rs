@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 pub mod local;
 pub mod remote;
+use crate::println_verbose;
 
 pub enum NuspecTag {
     Null,
@@ -162,10 +163,15 @@ fn get_feed_from_source_attribs(
     let user = attrib_map.get("user");
     let password = attrib_map.get("password");
 
+    println_verbose(&format!(
+        "feed '{}' -> '{}' | disabled: {}",
+        name, url, disabled
+    ));
+
     let cred = match user.is_some() && password.is_some() {
         true => Some(Credential {
             user: user.unwrap().clone(),
-            pass: password.unwrap().clone(),
+            pass: decrypt_choco_config_string(password.unwrap()),
         }),
         false => None,
     };
@@ -216,6 +222,7 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     let mut cfg_dir = PathBuf::from(choco_dir);
     cfg_dir.push("config/chocolatey.config");
 
+    println_verbose(&format!("parse '{}'", cfg_dir.to_str().unwrap()));
     let mut config_settings: HashMap<String, String> = HashMap::new();
 
     for entry in glob::glob(&cfg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
@@ -260,7 +267,6 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
         }
     }
     // println!("{:#?}", config_settings);
-    if config_settings.get("proxy").is_some() {}
     let proxy_config = match config_settings.get("proxy") {
         Some(proxy_url) => match proxy_url.is_empty() {
             true => None,
@@ -270,7 +276,7 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
                     Some(proxy_user) => Some(Credential {
                         user: proxy_user.clone(),
                         pass: match config_settings.get("proxyPassword") {
-                            Some(proxy_pass) => proxy_pass.clone(),
+                            Some(proxy_pass) => decrypt_choco_config_string(proxy_pass),
                             None => String::new(),
                         },
                     }),
@@ -292,6 +298,25 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
         }
     }
     Ok(sources_with_proxy)
+}
+
+fn decrypt_choco_config_string(encrypted: &str) -> String {
+    // TODO replace by using native dpadpi.CryptUnprotectData ??
+    println_verbose(&format!("decypher '{}'", encrypted));
+    let pwsh = format!(
+        "Add-Type -AssemblyName System.Security;([System.Text.UTF8Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect(([System.Convert]::FromBase64String('{}')),([System.Text.UTF8Encoding]::UTF8.GetBytes('Chocolatey')),[System.Security.Cryptography.DataProtectionScope]::LocalMachine)))",
+        encrypted
+    );
+    let chdec = std::process::Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-ExecutionPolicy")
+        .arg("Bypass")
+        .arg(pwsh)
+        .output()
+        .expect("failed to run decypher text");
+    let decrypted = String::from_utf8_lossy(&chdec.stdout);
+    let res = decrypted.trim(); // remove newlines
+    res.to_string()
 }
 
 #[cfg(test)]

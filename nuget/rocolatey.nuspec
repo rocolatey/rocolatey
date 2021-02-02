@@ -4,14 +4,37 @@
   <metadata>
     <id>rocolatey</id>
     <title>ROCO(latey)</title>
-    <version>0.5.1</version>
+    <version>0.5.2</version>
     <authors>Manfred Wallner</authors>
     <owners>Manfred Wallner</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>blazing fast Chocolatey queries</summary>
     <description>
-      querying the list of local installed Chocolatey packages, 100 times faster than `choco list -lo`.
-      check for outdated packages in a matter of seconds rather than minutes.
+## R(ocket-fast) Chocolatey queries.
+
+* mimics output of Chocolatey commands (drop-in replacement)
+* doesn't make use of Chocolatey or chocolatey.dll - just looks at the filesystem / does native ODATA calls.
+* can be used to query Chocolatey status while choco.exe is running.
+* it's supposed to be much faster for each command that has a Chocolatey counterpart.
+
+### What can roco do for me?
+
+Take a look at the help (roco -h), basically roco allows you to list installed packages, list failed package installs, configured sources and check for updates. In addition to that, there may be some hidden gems that are only available in roco, but not in vanilla Chocolatey.
+
+|    choco command    |  roco command   |
+| :-----------------: | :-------------: |
+| `choco source list` |  `roco source`  |
+|  `choco list -lo`   |   `roco list`   |
+|  `choco outdated`   | `roco outdated` |
+|          -          |   `roco bad`    |
+|          -          |   ... :wink:    |
+
+Normally you should not run multiple Chocolatey instances at the same time, however this may be required in certain scenarios. If you wanted to check if updates are available, or simply list all configured sources, roco is there to help you out without worrying of breaking something because you accidentally called choco in parallel.
+
+### How much faster is roco.exe compared to choco.exe?
+
+It very much depends on the number of installed packages and configured feeds, generally speaking roco should always be much faster than choco, the difference becomes bigger when dealing with many packages and feeds.
+
     </description>
     <copyright>Copyright (c) 2021 Manfred Wallner</copyright>
     <projectUrl>https://github.com/mwallner/rocolatey</projectUrl>
