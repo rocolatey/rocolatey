@@ -3,6 +3,7 @@ use quick_xml::Reader;
 
 use std::path::PathBuf;
 
+use crate::println_verbose;
 use crate::roco::{get_choco_sources, get_chocolatey_dir, NuspecTag, Package};
 
 pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
@@ -97,12 +98,8 @@ pub fn get_sources_text(limitoutput: bool) -> String {
                         false => f.name.clone(),
                     };
                     let name_2 = match &f.credential {
-                        Some(_) => {
-                            format!("{} (Authenticated)", f.url)
-                        }
-                        None => {
-                            format!("{} ", f.url)
-                        }
+                        Some(_) => format!("{} (Authenticated)", f.url),
+                        None => format!("{} ", f.url),
                     };
                     format!(
                         "{} - {}| Priority {}|Bypass Proxy - {}|Self-Service - {}|Admin Only - {}.",
@@ -142,6 +139,7 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
     let mut pkg_name = String::new();
     let mut pkg_version = String::new();
 
+    println_verbose(&format!("parse nuspec '{}'", pkgs_path.to_str().unwrap()));
     let mut reader = Reader::from_file(pkgs_path).expect("failed to init xml reader");
     reader.trim_text(true);
     let mut buf = Vec::new();

@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 pub mod local;
 pub mod remote;
+use crate::println_verbose;
 
 pub enum NuspecTag {
     Null,
@@ -162,6 +163,11 @@ fn get_feed_from_source_attribs(
     let user = attrib_map.get("user");
     let password = attrib_map.get("password");
 
+    println_verbose(&format!(
+        "feed '{}' -> '{}' | disabled: {}",
+        name, url, disabled
+    ));
+
     let cred = match user.is_some() && password.is_some() {
         true => Some(Credential {
             user: user.unwrap().clone(),
@@ -216,6 +222,7 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     let mut cfg_dir = PathBuf::from(choco_dir);
     cfg_dir.push("config/chocolatey.config");
 
+    println_verbose(&format!("parse '{}'", cfg_dir.to_str().unwrap()));
     let mut config_settings: HashMap<String, String> = HashMap::new();
 
     for entry in glob::glob(&cfg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
@@ -295,6 +302,7 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
 
 fn decrypt_choco_config_string(encrypted: &str) -> String {
     // TODO replace by using native dpadpi.CryptUnprotectData ??
+    println_verbose(&format!("decypher '{}'", encrypted));
     let pwsh = format!(
         "Add-Type -AssemblyName System.Security;([System.Text.UTF8Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect(([System.Convert]::FromBase64String('{}')),([System.Text.UTF8Encoding]::UTF8.GetBytes('Chocolatey')),[System.Security.Cryptography.DataProtectionScope]::LocalMachine)))",
         encrypted

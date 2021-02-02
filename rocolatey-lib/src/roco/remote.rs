@@ -7,6 +7,7 @@ use std::path::PathBuf;
 
 use crate::roco::local::get_local_packages;
 use crate::roco::{get_choco_sources, semver_is_newer, Feed, OutdatedInfo, Package};
+use crate::println_verbose;
 
 // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
 // https://joelverhagen.github.io/NuGetUndocs/
@@ -28,7 +29,10 @@ fn build_reqwest(feed: &Feed) -> reqwest::Client {
   if feed.credential.is_some() {
     let cred = feed.credential.as_ref().unwrap();
     let cred = http_auth_basic::Credentials::new(&cred.user, &cred.pass);
-    headers.insert(reqwest::header::AUTHORIZATION, cred.as_http_header().parse().unwrap());
+    headers.insert(
+      reqwest::header::AUTHORIZATION,
+      cred.as_http_header().parse().unwrap(),
+    );
   }
   static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
   rbuilder
@@ -70,7 +74,7 @@ async fn receive_package_delta(
       base_uri, latest_filter, batch_size, batch_offset
     ),
   };
-  // println!("q: {}", rs);
+
   let client = build_reqwest(&feed);
   let resp = client.get(&rs).send().await;
   let query_res = resp.unwrap().text().await.unwrap();
@@ -365,11 +369,10 @@ async fn get_odata_xml_packages(
       query_string.push_str(" or ");
     }
 
-    // println!(" -> q: {}", query_string);
+    println_verbose(&format!(" -> GET: {}", query_string));
     let client = build_reqwest(&feed);
-    //println!("client: {:#?}", client);
     let resp_odata = client.get(&query_string).send().await;
-    //println!("result: {:#?}", resp_odata);
+    // println_verbose(&format!(" -> {:#?}", resp_odata));
     let resp_odata = resp_odata.unwrap().text().await.unwrap();
     query_res.push_str(&resp_odata);
     // note: not all queried pkgs have to exist on remote, thus we always need to inc batch_size,
