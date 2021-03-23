@@ -90,7 +90,7 @@ fn my_semver_is_newer(a: &str, b: &str) -> bool {
         let n_b = v_b.parse::<i32>();
         if n_a.is_ok() && n_b.is_err() {
             // a is digit, b is something else
-            return n_a.unwrap() > my_semver_get_v_part(v_b);
+            return n_a.unwrap() >= my_semver_get_v_part(v_b);
         }
         if n_a.is_err() && n_b.is_ok() {
             // a is not a digit, but b is
@@ -329,6 +329,9 @@ mod tests {
         assert!(semver_is_newer("2.1.0", "1.0.0"));
         assert!(semver_is_newer("2.0.2", "1.12.0"));
         assert!(semver_is_newer("1.2.3.4", "1.2.3"));
+        assert!(semver_is_newer("1.2.3.1-beta1", "1.2.3"));
+        assert!(!semver_is_newer("1.2.3.1-beta1", "1.2.3.2"));
+        assert!(semver_is_newer("1.2.3.2", "1.2.3.1-beta1"));
         assert!(semver_is_newer("1.1.0-alpha", "1.0.0"));
         assert!(semver_is_newer("1.11-alpha", "1.07"));
         assert!(semver_is_newer("1.11", "1.07-alpha"));
@@ -338,5 +341,6 @@ mod tests {
         assert!(!semver_is_newer("1.3.0", "2.1.0"));
         assert!(!semver_is_newer("1.2.3", "1.2.3.1"));
         assert!(!semver_is_newer("1.1.0-alpha", "1.1.0"));
+        assert!(semver_is_newer("1.1.0", "1.1.0-alpha"));
     }
 }
