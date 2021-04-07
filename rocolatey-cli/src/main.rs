@@ -9,7 +9,7 @@ use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey")
-        .version("0.5.3")
+        .version("0.6.0")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides a basic interface for rocolatey-lib")
         .subcommand(
@@ -47,6 +47,18 @@ async fn main() {
         .subcommand(
             SubCommand::with_name("outdated")
                 .about("Returns a list of outdated packages.")
+                .arg(
+                    Arg::with_name("ignore-pinned")
+                        .short("ip")
+                        .long("ignore-pinned")
+                        .help("ignore any pinned packages"),
+                )
+                .arg(
+                    Arg::with_name("ignore-unfound")
+                        .short("iu")
+                        .long("ignore-unfound")
+                        .help("ignore any unfound packages"),
+                )
                 .arg(
                     Arg::with_name("limitoutput")
                         .short("r")
