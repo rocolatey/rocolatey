@@ -13,6 +13,16 @@ R(ocket-fast) [Chocolatey](https://chocolatey.org/) queries.
 
 ![roco logo](./roco.png)
 
+> ***Installing...***
+
+Use Chocolatey!
+
+```PowerShell
+choco install rocolatey
+```
+
+... or grab the latest binary from [here](https://github.com/mwallner/rocolatey/releases).
+
 > ***Why are Rocolatey queries so much faster than Chocolatey's counterparts?***
 
 Rocolatey expoits some suboptimal algorithmic decisions in the original `choco.exe`, it uses SAX parsers instead of reading the whole DOM of nuspec and config files, does a lot less API-calls when talking to nuget repositories etc. etc.

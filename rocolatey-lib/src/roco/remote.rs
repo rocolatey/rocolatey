@@ -5,9 +5,9 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
+use crate::println_verbose;
 use crate::roco::local::get_local_packages;
 use crate::roco::{get_choco_sources, semver_is_newer, Feed, OutdatedInfo, Package};
-use crate::println_verbose;
 
 // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
 // https://joelverhagen.github.io/NuGetUndocs/
@@ -217,20 +217,38 @@ async fn get_latest_remote_packages(
       .expect("failed to get remote packages");
     // println!("{:#?}", pkgs);
     for p in pkgs {
-      if remote_pkgs.contains_key(&p.id) {
-        let remote_version = &remote_pkgs.get(&p.id).unwrap().version;
-        if !semver_is_newer(remote_version, &p.version) {
+      let lowercase_id = p.id.to_lowercase();
+      if remote_pkgs.contains_key(&lowercase_id) {
+        let remote_version = &remote_pkgs.get(&lowercase_id).unwrap().version;
+        println_verbose(&format!(
+          "  pkg {} also exists on remote {}, version={}",
+          lowercase_id, f.name, p.version
+        ));
+        if !semver_is_newer(&p.version, remote_version) {
+          println_verbose(&format!(
+            "  skip: already know newer version {}",
+            remote_version
+          ));
           continue;
         }
       }
-      remote_pkgs.insert(p.id.to_lowercase(), p);
+      println_verbose(&format!(
+        "  using {}, version={} for outdated check",
+        lowercase_id, p.version
+      ));
+      remote_pkgs.insert(lowercase_id, p);
     }
   }
 
   Ok(remote_pkgs)
 }
 
-pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> String {
+pub async fn get_outdated_packages(
+  limitoutput: bool,
+  prerelease: bool,
+  ignore_pinned: bool,
+  ignore_unfound: bool,
+) -> String {
   // foreach local package, compare remote version number
   let local_packages = get_local_packages().expect("failed to get local package list");
   let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
@@ -258,8 +276,15 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
   let mut oi: Vec<OutdatedInfo> = Vec::new();
   let mut warning_count = 0;
   for l in local_packages {
+    if ignore_pinned && l.pinned {
+      continue;
+    }
     match latest_packages.get(&l.id.to_lowercase()) {
       Some(u) => {
+        println_verbose(&format!(
+          "  check latest remote pkg {}, version={} against local version={}",
+          l.id, u.version, l.version
+        ));
         if semver_is_newer(&u.version, &l.version) {
           oi.push(OutdatedInfo {
             id: l.id,
@@ -272,15 +297,17 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
         }
       }
       None => {
-        warning_count += 1;
-        oi.push(OutdatedInfo {
-          id: l.id,
-          local_version: l.version.clone(),
-          remote_version: l.version.clone(),
-          pinned: l.pinned,
-          outdated: false,
-          exists_on_remote: false,
-        })
+        if !ignore_unfound {
+          warning_count += 1;
+          oi.push(OutdatedInfo {
+            id: l.id,
+            local_version: l.version.clone(),
+            remote_version: l.version.clone(),
+            pinned: l.pinned,
+            outdated: false,
+            exists_on_remote: false,
+          })
+        }
       }
     };
   }
@@ -432,6 +459,10 @@ fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
       },
       Ok(Event::End(ref e)) => match e.name() {
         b"entry" => {
+          println_verbose(&format!(
+            "  package_from_odata: {}, version={}",
+            pkg_name, pkg_version
+          ));
           packages.push(Package {
             id: pkg_name.to_string(),
             version: pkg_version.to_string(),
