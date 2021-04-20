@@ -9,7 +9,7 @@ use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
 #[tokio::main]
 async fn main() {
     let matches = App::new("Rocolatey")
-        .version("0.6.0")
+        .version("0.5.4")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides a basic interface for rocolatey-lib")
         .subcommand(
@@ -49,13 +49,11 @@ async fn main() {
                 .about("Returns a list of outdated packages.")
                 .arg(
                     Arg::with_name("ignore-pinned")
-                        .short("ip")
                         .long("ignore-pinned")
                         .help("ignore any pinned packages"),
                 )
                 .arg(
                     Arg::with_name("ignore-unfound")
-                        .short("iu")
                         .long("ignore-unfound")
                         .help("ignore any unfound packages"),
                 )
@@ -127,7 +125,9 @@ async fn main() {
         rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
         let r = matches.is_present("limitoutput");
         let pre = matches.is_present("prerelease");
-        print!("{}", get_outdated_packages(r, pre).await);
+        let ignore_pinned = matches.is_present("ignore-pinned");
+        let ignore_unfound = matches.is_present("ignore-unfound");
+        print!("{}", get_outdated_packages(r, pre, ignore_pinned, ignore_unfound).await);
     } else if let Some(matches) = matches.subcommand_matches("source") {
         rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
         let r = matches.is_present("limitoutput");

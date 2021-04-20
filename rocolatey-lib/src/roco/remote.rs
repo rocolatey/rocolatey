@@ -225,7 +225,10 @@ async fn get_latest_remote_packages(
           lowercase_id, f.name, p.version
         ));
         if !semver_is_newer(&p.version, remote_version) {
-          println_verbose(&format!("  skip: already know newer version {}", remote_version));
+          println_verbose(&format!(
+            "  skip: already know newer version {}",
+            remote_version
+          ));
           continue;
         }
       }
@@ -240,7 +243,12 @@ async fn get_latest_remote_packages(
   Ok(remote_pkgs)
 }
 
-pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> String {
+pub async fn get_outdated_packages(
+  limitoutput: bool,
+  prerelease: bool,
+  ignore_pinned: bool,
+  ignore_unfound: bool,
+) -> String {
   // foreach local package, compare remote version number
   let local_packages = get_local_packages().expect("failed to get local package list");
   let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
@@ -268,6 +276,9 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
   let mut oi: Vec<OutdatedInfo> = Vec::new();
   let mut warning_count = 0;
   for l in local_packages {
+    if ignore_pinned && l.pinned {
+      continue;
+    }
     match latest_packages.get(&l.id.to_lowercase()) {
       Some(u) => {
         println_verbose(&format!(
@@ -286,15 +297,17 @@ pub async fn get_outdated_packages(limitoutput: bool, prerelease: bool) -> Strin
         }
       }
       None => {
-        warning_count += 1;
-        oi.push(OutdatedInfo {
-          id: l.id,
-          local_version: l.version.clone(),
-          remote_version: l.version.clone(),
-          pinned: l.pinned,
-          outdated: false,
-          exists_on_remote: false,
-        })
+        if !ignore_unfound {
+          warning_count += 1;
+          oi.push(OutdatedInfo {
+            id: l.id,
+            local_version: l.version.clone(),
+            remote_version: l.version.clone(),
+            pinned: l.pinned,
+            outdated: false,
+            exists_on_remote: false,
+          })
+        }
       }
     };
   }
