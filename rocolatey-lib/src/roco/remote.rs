@@ -130,7 +130,7 @@ async fn get_latest_remote_packages_on_feed(
   feed: &Feed,
   prerelease: bool,
 ) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
-  progress_bar.set_message(&format!("receive packages from '{}'", feed.name));
+  progress_bar.set_message(format!("receive packages from '{}'", feed.name));
   // else - recurse file search + filename analysis
   let https_regex = regex::Regex::new(r"^https?://.+").unwrap();
   match https_regex.is_match(&feed.url) {
