@@ -185,7 +185,7 @@ fn get_nupkgs_from_path(
     match get_package_from_nupkg(entry?.file_name().unwrap().to_str().unwrap()) {
       Some(p) => {
         let version = semver::Version::parse(&p.version).unwrap();
-        if !prerelease && version.is_prerelease() {
+        if !prerelease && !version.pre.is_empty() {
           continue;
         }
         if pkgs
