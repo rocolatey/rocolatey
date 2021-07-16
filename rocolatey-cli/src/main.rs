@@ -11,15 +11,16 @@ use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
 async fn main() {
     let matches = cli::build_cli().get_matches();
 
-    if matches.is_present("generate-bash-completions") {
-        generate::<Bash, _>(&mut cli::build_cli(), "roco", &mut std::io::stdout());
+    if let Some(matches) = matches.subcommand_matches("generate-shell-completions") {
+        if matches.is_present("powershell") {
+            generate::<PowerShell, _>(&mut cli::build_cli(), "roco", &mut std::io::stdout());
+        } else if matches.is_present("bash") {
+            generate::<Bash, _>(&mut cli::build_cli(), "roco", &mut std::io::stdout());
+        } else if matches.is_present("zsh") {
+            generate::<Zsh, _>(&mut cli::build_cli(), "roco", &mut std::io::stdout());
+        }
         std::process::exit(0);
     }
-    if matches.is_present("generate-pwsh-completions") {
-        generate::<PowerShell, _>(&mut cli::build_cli(), "roco", &mut std::io::stdout());
-        std::process::exit(0);
-    }
-
     if let Some(matches) = matches.subcommand_matches("list") {
         rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
         let r = matches.is_present("limitoutput");

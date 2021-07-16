@@ -104,7 +104,10 @@ async fn update_feed_index(feed: &Feed, limitoutput: bool, prerelease: bool) -> 
     batch_size = a;
     f.write_all(req_res.as_bytes())
       .expect("unable to write data");
-
+    if 0 == batch_size {
+      println!("failed to receive further packages... stop!");
+      break;
+    }
     received_packages += batch_size;
     progress_bar.set_position(received_packages as u64);
   }
