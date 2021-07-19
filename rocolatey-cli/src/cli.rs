@@ -20,25 +20,6 @@ pub fn build_cli() -> App<'static> {
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
-      App::new("generate-shell-completions")
-        .about("create tab completions for various shell environments")
-        .arg(
-          Arg::new("powershell")
-            .long("powershell")
-            .about("create powershell tab completions"),
-        )
-        .arg(
-          Arg::new("bash")
-            .long("bash")
-            .about("create bash tab completions"),
-        )
-        .arg(
-          Arg::new("zsh")
-            .long("zsh")
-            .about("create zsh tab completions"),
-        ),
-    )
-    .subcommand(
       App::new("list")
         .about("list local installed packages")
         .arg(&common_arg_limitoutput)
