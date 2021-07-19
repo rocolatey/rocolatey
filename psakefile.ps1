@@ -7,6 +7,7 @@ task Build {
 
 task Pack -Depends Build {
   Copy-Item .\target\release\*.exe nuget\tools\.
+  Copy-Item .\rocolatey-cli\completions\_roco.ps1 nuget\tools\RocoTabCompletion.psm1
   Copy-Item .\LICENSE.txt nuget\tools\.
   choco pack nuget/rocolatey.nuspec
 }

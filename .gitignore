@@ -5,3 +5,4 @@
 nuget/tools/*.exe
 nuget/tools/LICENSE.txt
 *.zip
+choco-local_dl.xml
