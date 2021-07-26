@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 quick-xml = "0.22.0"
 glob = "0.3.0"
-futures = "0.3.15"
+futures = "0.3.16"
 reqwest = "0.11.4"
 indicatif = "0.16.2"
 semver = "1.0.3"
