@@ -1,49 +1,48 @@
 
-edit:completion:arg-completer[roco] = [@words]{
-    fn spaces [n]{
-        repeat $n ' ' | joins ''
+use builtin;
+use str;
+
+set edit:completion:arg-completer[roco] = {|@words|
+    fn spaces {|n|
+        builtin:repeat $n ' ' | str:join ''
     }
-    fn cand [text desc]{
-        edit:complex-candidate $text &display-suffix=' '(spaces (- 14 (wcswidth $text)))$desc
+    fn cand {|text desc|
+        edit:complex-candidate $text &display=$text' '(spaces (- 14 (wcswidth $text)))$desc
     }
-    command = 'roco'
-    for word $words[1:-1] {
-        if (has-prefix $word '-') {
+    var command = 'roco'
+    for word $words[1..-1] {
+        if (str:has-prefix $word '-') {
             break
         }
-        command = $command';'$word
+        set command = $command';'$word
     }
-    completions = [
+    var completions = [
         &'roco'= {
-            cand -h 'Prints help information'
-            cand --help 'Prints help information'
-            cand -V 'Prints version information'
-            cand --version 'Prints version information'
-            cand list 'list local installed packages'
-            cand bad 'list packages in lib-bad/'
-            cand outdated 'Returns a list of outdated packages.'
-            cand source 'list choco sources'
-            cand help 'Prints this message or the help of the given subcommand(s)'
+            cand -h 'Print help information'
+            cand --help 'Print help information'
+            cand -V 'Print version information'
+            cand --version 'Print version information'
+            cand list 'list'
+            cand bad 'bad'
+            cand outdated 'outdated'
+            cand source 'source'
+            cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;list'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Prints help information'
-            cand --help 'Prints help information'
-            cand -V 'Prints version information'
-            cand --version 'Prints version information'
+            cand -h 'Print help information'
+            cand --help 'Print help information'
         }
         &'roco;bad'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Prints help information'
-            cand --help 'Prints help information'
-            cand -V 'Prints version information'
-            cand --version 'Prints version information'
+            cand -h 'Print help information'
+            cand --help 'Print help information'
         }
         &'roco;outdated'= {
             cand --ignore-pinned 'ignore any pinned packages'
@@ -54,26 +53,18 @@ edit:completion:arg-completer[roco] = [@words]{
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Prints help information'
-            cand --help 'Prints help information'
-            cand -V 'Prints version information'
-            cand --version 'Prints version information'
+            cand -h 'Print help information'
+            cand --help 'Print help information'
         }
         &'roco;source'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Prints help information'
-            cand --help 'Prints help information'
-            cand -V 'Prints version information'
-            cand --version 'Prints version information'
+            cand -h 'Print help information'
+            cand --help 'Print help information'
         }
         &'roco;help'= {
-            cand -h 'Prints help information'
-            cand --help 'Prints help information'
-            cand -V 'Prints version information'
-            cand --version 'Prints version information'
         }
     ]
     $completions[$command]

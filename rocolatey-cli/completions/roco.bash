@@ -9,10 +9,9 @@ _roco() {
     for i in ${COMP_WORDS[@]}
     do
         case "${i}" in
-            roco)
+            "$1")
                 cmd="roco"
                 ;;
-            
             bad)
                 cmd+="__bad"
                 ;;
@@ -35,13 +34,12 @@ _roco() {
 
     case "${cmd}" in
         roco)
-            opts=" -h -V  --help --version  list bad outdated source help"
+            opts="-h -V --help --version list bad outdated source help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                
                 *)
                     COMPREPLY=()
                     ;;
@@ -49,15 +47,13 @@ _roco() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        
         roco__bad)
-            opts=" -r -v -h -V  --limitoutput --verbose --help --version  "
+            opts="-r -v -h --limitoutput --verbose --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                
                 *)
                     COMPREPLY=()
                     ;;
@@ -66,13 +62,12 @@ _roco() {
             return 0
             ;;
         roco__help)
-            opts=" -h -V  --help --version  "
+            opts="<SUBCOMMAND>..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                
                 *)
                     COMPREPLY=()
                     ;;
@@ -81,13 +76,12 @@ _roco() {
             return 0
             ;;
         roco__list)
-            opts=" -r -v -h -V  --limitoutput --verbose --help --version  "
+            opts="-r -v -h --limitoutput --verbose --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                
                 *)
                     COMPREPLY=()
                     ;;
@@ -96,13 +90,12 @@ _roco() {
             return 0
             ;;
         roco__outdated)
-            opts=" -p -r -v -h -V  --ignore-pinned --ignore-unfound --pre --limitoutput --verbose --help --version  "
+            opts="-p -r -v -h --ignore-pinned --ignore-unfound --pre --limitoutput --verbose --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                
                 *)
                     COMPREPLY=()
                     ;;
@@ -111,13 +104,12 @@ _roco() {
             return 0
             ;;
         roco__source)
-            opts=" -r -v -h -V  --limitoutput --verbose --help --version  "
+            opts="-r -v -h --limitoutput --verbose --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                
                 *)
                     COMPREPLY=()
                     ;;

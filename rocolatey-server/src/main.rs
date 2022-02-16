@@ -1,23 +1,23 @@
 use warp::Filter;
 extern crate clap;
-use clap::{App, Arg};
+use clap::{Command, Arg};
 
 use rocolatey_lib::roco::local::{get_local_bad_packages_text, get_local_packages_text};
 
 #[tokio::main]
 async fn main() {
-    let matches = App::new("Rocolatey Server")
+    let matches = Command::new("Rocolatey Server")
         .version("0.5.5")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides web access to rocolatey-lib")
         .arg(
-            Arg::with_name("address")
+            Arg::new("address")
                 .help("Sets the network address to bind to")
                 .index(1),
         )
         .arg(
-            Arg::with_name("port")
-                .short("p")
+            Arg::new("port")
+                .short('p')
                 .help("Sets the port to bind to")
                 .index(2),
         )

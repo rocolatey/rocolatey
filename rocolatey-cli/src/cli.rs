@@ -1,62 +1,62 @@
 extern crate clap;
-use clap::{App, Arg};
+use clap::{Command, Arg};
 
-pub fn build_cli() -> App<'static> {
+pub fn build_cli() -> Command<'static> {
   let common_arg_limitoutput = Arg::new("limitoutput")
     .short('r')
     .long("limitoutput")
-    .about("limit the output to essential information");
+    .help("limit the output to essential information");
   let common_arg_verbose = Arg::new("verbose")
     .short('v')
     .long("verbose")
-    .about("be verbose");
+    .help("be verbose");
   let common_arg_prerelease = Arg::new("prerelease")
     .short('p')
     .long("pre")
-    .about("include prerelease versions");
+    .help("include prerelease versions");
 
-  App::new("Rocolatey")
+  Command::new("Rocolatey")
     .version("0.5.4")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
-    .about("provides a basic interface for rocolatey-lib")
+    .override_help("provides a basic interface for rocolatey-lib")
     .subcommand(
-      App::new("list")
-        .about("list local installed packages")
+      Command::new("list")
+        .override_help("list local installed packages")
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
     .subcommand(
-      App::new("bad")
-        .about("list packages in lib-bad/")
+      Command::new("bad")
+        .override_help("list packages in lib-bad/")
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
     .subcommand(
-      App::new("outdated")
-        .about("Returns a list of outdated packages.")
+      Command::new("outdated")
+        .override_help("Returns a list of outdated packages.")
         .arg(
           Arg::new("ignore-pinned")
             .long("ignore-pinned")
-            .about("ignore any pinned packages"),
+            .help("ignore any pinned packages"),
         )
         .arg(
           Arg::new("ignore-unfound")
             .long("ignore-unfound")
-            .about("ignore any unfound packages"),
+            .help("ignore any unfound packages"),
         )
         .arg(&common_arg_prerelease)
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
     .subcommand(
-      App::new("source")
-        .about("list choco sources")
+      Command::new("source")
+        .override_help("list choco sources")
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
   /*
   .subcommand(
-    App::new("index")
+    Command::new("index")
       .about("crate package index")
       .arg(&common_arg_limitoutput)
       .arg(&common_arg_verbose)
