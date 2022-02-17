@@ -25,10 +25,10 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help information')
             [CompletionResult]::new('-V', 'V', [CompletionResultType]::ParameterName, 'Print version information')
             [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Print version information')
-            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list')
-            [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'bad')
-            [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'outdated')
-            [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'source')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list local installed packages')
+            [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'list packages in lib-bad/')
+            [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'Returns a list of outdated packages.')
+            [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'list choco sources')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }

@@ -12,14 +12,15 @@ async fn main() {
         .about("provides web access to rocolatey-lib")
         .arg(
             Arg::new("address")
+                .long("address")
+                .short('a')
                 .help("Sets the network address to bind to")
-                .index(1),
         )
         .arg(
             Arg::new("port")
+                .long("port")
                 .short('p')
                 .help("Sets the port to bind to")
-                .index(2),
         )
         .get_matches();
 

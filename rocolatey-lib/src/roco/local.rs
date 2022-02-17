@@ -8,7 +8,7 @@ use crate::roco::{get_choco_sources, get_chocolatey_dir, NuspecTag, Package};
 
 pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
     let mut pkgs: Vec<Package> = Vec::new();
-    let choco_dir = get_chocolatey_dir().unwrap();
+    let choco_dir = get_chocolatey_dir().unwrap_or_else(|_| String::from("."));
     let mut pkg_dir = PathBuf::from(choco_dir);
     pkg_dir.push("lib");
     pkg_dir.push("*/*.nuspec");
@@ -23,7 +23,7 @@ pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> 
 
 pub fn get_local_bad_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
     let mut pkgs: Vec<Package> = Vec::new();
-    let choco_dir = get_chocolatey_dir().unwrap();
+    let choco_dir = get_chocolatey_dir().unwrap_or_else(|_| String::from("."));
     let mut pkg_dir = PathBuf::from(choco_dir);
     pkg_dir.push("lib-bad");
     pkg_dir.push("*/*.nuspec");
@@ -123,11 +123,11 @@ pub fn get_sources_text(limitoutput: bool) -> String {
 
 fn get_package_list_text(packages: Vec<Package>, limitoutput: bool) -> String {
     let mut res = String::new();
-    let num_iterations = packages.len() - 1;
+    let num_iterations = packages.len();
     let sep = if limitoutput { "|" } else { " " };
     for (i, p) in packages.iter().enumerate() {
         res.push_str(&format!("{}{}{}", p.id(), sep, p.version()));
-        if i < num_iterations {
+        if i < (num_iterations - 1) {
             res.push_str("\r\n");
         }
     }

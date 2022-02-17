@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $rocoTabCompletion = Join-Path $env:ChocolateyPackageFolder "tools\RocoTabCompletion.psm1"
 
 if ($profile -And (Test-Path $profile)) {
-  if ((Get-Content $profile) -notmatch "RocolateyTabCompletion") {
+  if ((Get-Content $profile) -notmatch "### RocolateyTabCompletion ###") {
     @"
 `n
 ### RocolateyTabCompletion ###

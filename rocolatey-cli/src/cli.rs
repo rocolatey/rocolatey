@@ -18,22 +18,22 @@ pub fn build_cli() -> Command<'static> {
   Command::new("Rocolatey")
     .version("0.5.4")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
-    .override_help("provides a basic interface for rocolatey-lib")
+    .about("provides a basic interface for rocolatey-lib")
     .subcommand(
       Command::new("list")
-        .override_help("list local installed packages")
+        .about("list local installed packages")
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
     .subcommand(
       Command::new("bad")
-        .override_help("list packages in lib-bad/")
+        .about("list packages in lib-bad/")
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
     .subcommand(
       Command::new("outdated")
-        .override_help("Returns a list of outdated packages.")
+        .about("Returns a list of outdated packages.")
         .arg(
           Arg::new("ignore-pinned")
             .long("ignore-pinned")
@@ -50,7 +50,7 @@ pub fn build_cli() -> Command<'static> {
     )
     .subcommand(
       Command::new("source")
-        .override_help("list choco sources")
+        .about("list choco sources")
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )

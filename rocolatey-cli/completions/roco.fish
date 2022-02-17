@@ -1,9 +1,9 @@
 complete -c roco -n "__fish_use_subcommand" -s h -l help -d 'Print help information'
 complete -c roco -n "__fish_use_subcommand" -s V -l version -d 'Print version information'
-complete -c roco -n "__fish_use_subcommand" -f -a "list"
-complete -c roco -n "__fish_use_subcommand" -f -a "bad"
-complete -c roco -n "__fish_use_subcommand" -f -a "outdated"
-complete -c roco -n "__fish_use_subcommand" -f -a "source"
+complete -c roco -n "__fish_use_subcommand" -f -a "list" -d 'list local installed packages'
+complete -c roco -n "__fish_use_subcommand" -f -a "bad" -d 'list packages in lib-bad/'
+complete -c roco -n "__fish_use_subcommand" -f -a "outdated" -d 'Returns a list of outdated packages.'
+complete -c roco -n "__fish_use_subcommand" -f -a "source" -d 'list choco sources'
 complete -c roco -n "__fish_use_subcommand" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c roco -n "__fish_seen_subcommand_from list" -s r -l limitoutput -d 'limit the output to essential information'
 complete -c roco -n "__fish_seen_subcommand_from list" -s v -l verbose -d 'be verbose'
