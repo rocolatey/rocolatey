@@ -30,12 +30,6 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "base64"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
-
-[[package]]
-name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
@@ -97,14 +91,14 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap"
-version = "3.1.0"
+version = "3.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5f1fea81f183005ced9e59cdb01737ef2423956dac5a6d731b06b2ecfaa3467"
+checksum = "7c167e37342afc5f33fd87bbc870cedd020d2a6dffa05d45ccd9241fbdd146db"
 dependencies = [
  "atty",
  "bitflags",
+ "clap_lex",
  "indexmap",
- "os_str_bytes",
  "strsim",
  "termcolor",
  "textwrap",
@@ -127,6 +121,15 @@ checksum = "8e1b28c4a802ac3628604fd267cac62aaea74dc61af3410db6b1c44c03b42599"
 dependencies = [
  "clap",
  "clap_complete",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "189ddd3b5d32a70b35e7686054371742a937b0d99128e76dde6340210e966669"
+dependencies = [
+ "os_str_bytes",
 ]
 
 [[package]]
@@ -369,7 +372,7 @@ version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0b7591fb62902706ae8e7aaff416b1b0fa2c0fd0878b46dc13baa3712d8a855"
 dependencies = [
- "base64 0.13.0",
+ "base64",
  "bitflags",
  "bytes",
  "headers-core",
@@ -405,16 +408,16 @@ checksum = "1323096b05d41827dadeaee54c9981958c0f94e670bc94ed80037d1a7b8b186b"
 dependencies = [
  "bytes",
  "fnv",
- "itoa",
+ "itoa 0.4.8",
 ]
 
 [[package]]
 name = "http-auth-basic"
-version = "0.3.1"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c692c953703936fa684b33084ce21ad4248769b5052079bbd89afe6b354a5762"
+checksum = "dd2e17aacf7f4a2428def798e2ff4f4f883c0987bdaf47dd5c8bc027bc9f1ebc"
 dependencies = [
- "base64 0.12.3",
+ "base64",
 ]
 
 [[package]]
@@ -455,7 +458,7 @@ dependencies = [
  "http-body",
  "httparse",
  "httpdate",
- "itoa",
+ "itoa 0.4.8",
  "pin-project-lite",
  "socket2",
  "tokio",
@@ -521,6 +524,12 @@ name = "itoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
+
+[[package]]
+name = "itoa"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aab8fc367588b89dcee83ab0fd66b72b50b72fa1904d7095045ace2b0c81c35"
 
 [[package]]
 name = "js-sys"
@@ -722,9 +731,6 @@ name = "os_str_bytes"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e22443d1643a904602595ba1cd8f7d896afe56d26712531c5ff73a15b2fbf64"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "parking_lot"
@@ -909,11 +915,11 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.9"
+version = "0.11.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f242f1488a539a79bac6dbe7c8609ae43b7914b7736210f239a37cccb32525"
+checksum = "46a1f7aa4f35e5e8b4160449f51afc758f0ce6454315a9fa7d0d113e958c41eb"
 dependencies = [
- "base64 0.13.0",
+ "base64",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -1047,9 +1053,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.5"
+version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0486718e92ec9a68fbed73bb5ef687d71103b142595b406835649bebd33f72c7"
+checksum = "d65bd28f48be7196d222d95b9243287f48d27aca604e08497513019ff0502cc4"
 
 [[package]]
 name = "serde"
@@ -1063,19 +1069,19 @@ version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f690853975602e1bfe1ccbf50504d67174e3bcf340f23b5ea9992e0587a52d8"
 dependencies = [
- "itoa",
+ "itoa 0.4.8",
  "ryu",
  "serde",
 ]
 
 [[package]]
 name = "serde_urlencoded"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edfa57a7f8d9c1d260a549e7224100f6c43d43f9103e06dd8b4095a9b2b43ce9"
+checksum = "d3491c14715ca2294c4d6a88f15e84739788c1d030eed8c110436aafdaa2f3fd"
 dependencies = [
  "form_urlencoded",
- "itoa",
+ "itoa 1.0.1",
  "ryu",
  "serde",
 ]
@@ -1176,9 +1182,9 @@ dependencies = [
 
 [[package]]
 name = "textwrap"
-version = "0.14.2"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0066c8d12af8b5acd21e00547c3797fde4e8677254a7ee429176ccebbe93dd80"
+checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 
 [[package]]
 name = "thiserror"
@@ -1343,7 +1349,7 @@ version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0b2d8558abd2e276b0a8df5c05a2ec762609344191e5fd23e292c910e9165b5"
 dependencies = [
- "base64 0.13.0",
+ "base64",
  "byteorder",
  "bytes",
  "http",
@@ -1640,9 +1646,9 @@ checksum = "504a2476202769977a040c6364301a3f65d0cc9e3fb08600b2bda150a0488316"
 
 [[package]]
 name = "winreg"
-version = "0.7.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0120db82e8a1e0b9fb3345a539c478767c0048d842860994d96113d5b667bd69"
+checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
 ]
