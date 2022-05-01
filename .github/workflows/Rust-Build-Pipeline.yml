@@ -17,7 +17,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build on ${{ matrix.os }}
       run: cargo build --verbose
     - name: Run tests on ${{ matrix.os }}
