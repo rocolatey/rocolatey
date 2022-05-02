@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 rocolatey-lib = { path = "../rocolatey-lib" }
 clap = "3.1.14"
-tokio = { version = "1.18.0", features = ["full"] }
+tokio = { version = "1.18.1", features = ["full"] }
 
 [build-dependencies]
 clap = "3.1.14"
