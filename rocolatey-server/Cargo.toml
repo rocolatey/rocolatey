@@ -1,6 +1,6 @@
 [package]
 name = "rocolatey-server"
-version = "0.5.4"
+version = "0.5.5"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
 edition = "2018"
 
@@ -8,6 +8,6 @@ edition = "2018"
 
 [dependencies]
 rocolatey-lib = { path = "../rocolatey-lib" }
-clap = "2.33.3"
-tokio = { version = "1.8.1", features = ["full"] }
-warp = "0.3.1"
+tokio = { version = "1.18.1", features = ["full"] }
+clap = "3.1.15"
+warp = "0.3.2"

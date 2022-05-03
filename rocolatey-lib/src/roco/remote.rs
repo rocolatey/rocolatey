@@ -104,7 +104,10 @@ async fn update_feed_index(feed: &Feed, limitoutput: bool, prerelease: bool) -> 
     batch_size = a;
     f.write_all(req_res.as_bytes())
       .expect("unable to write data");
-
+    if 0 == batch_size {
+      println!("failed to receive further packages... stop!");
+      break;
+    }
     received_packages += batch_size;
     progress_bar.set_position(received_packages as u64);
   }
@@ -130,7 +133,7 @@ async fn get_latest_remote_packages_on_feed(
   feed: &Feed,
   prerelease: bool,
 ) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
-  progress_bar.set_message(&format!("receive packages from '{}'", feed.name));
+  progress_bar.set_message(format!("receive packages from '{}'", feed.name));
   // else - recurse file search + filename analysis
   let https_regex = regex::Regex::new(r"^https?://.+").unwrap();
   match https_regex.is_match(&feed.url) {
@@ -185,7 +188,7 @@ fn get_nupkgs_from_path(
     match get_package_from_nupkg(entry?.file_name().unwrap().to_str().unwrap()) {
       Some(p) => {
         let version = semver::Version::parse(&p.version).unwrap();
-        if !prerelease && version.is_prerelease() {
+        if !prerelease && !version.pre.is_empty() {
           continue;
         }
         if pkgs
