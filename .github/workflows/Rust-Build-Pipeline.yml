@@ -22,3 +22,44 @@ jobs:
       run: cargo build --verbose
     - name: Run tests on ${{ matrix.os }}
       run: cargo test --verbose
+  build-nightly:
+    name: Build on nightly rust
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/cargo@v1.0.1
+      with: 
+        command: build
+        toolchain: nigthly
+  build-package:
+    name: Build (release) Binaries
+    runs-on: windows-latest
+    steps:
+      - name: x64 Windows build
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: stable-x86_64-pc-windows-msvc
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target stable-x86_64-pc-windows-msvc
+      - name: x86 Windows build
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: stable-i686-pc-windows-msvc
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target stable-i686-pc-windows-msvc
+    
