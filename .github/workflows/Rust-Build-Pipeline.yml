@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-test-debug:
     name: Build and Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -22,7 +22,7 @@ jobs:
       run: cargo build --verbose
     - name: Run tests on ${{ matrix.os }}
       run: cargo test --verbose
-  build-nightly:
+  build-test-nightly:
     name: Build on nightly rust
     runs-on: ${{ matrix.os }}
     strategy:
@@ -36,7 +36,7 @@ jobs:
         override: true
     - uses: actions-rs/cargo@v1.0.1
       with: 
-        command: build
+        command: test
         toolchain: nigthly
  
     
