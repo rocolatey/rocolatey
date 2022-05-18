@@ -34,32 +34,5 @@ jobs:
       with: 
         command: build
         toolchain: nigthly
-  build-package:
-    name: Build (release) Binaries
-    runs-on: windows-latest
-    steps:
-      - name: x64 Windows build
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: stable-x86_64-pc-windows-msvc
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target stable-x86_64-pc-windows-msvc
-      - name: x86 Windows build
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: stable-i686-pc-windows-msvc
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target stable-i686-pc-windows-msvc
+ 
     
