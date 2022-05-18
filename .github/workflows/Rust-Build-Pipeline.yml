@@ -30,6 +30,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
     - uses: actions-rs/cargo@v1.0.1
       with: 
         command: build
