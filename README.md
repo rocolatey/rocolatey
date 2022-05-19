@@ -1,7 +1,8 @@
 # ROCOLATEY
 
-[![Main Branch](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml/badge.svg)](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml)
-[![Develop Branch](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml/badge.svg?branch=dev)](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml)
+Main :rocket: [![Main Branch](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml/badge.svg)](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml)
+
+Dev :rocket: [![Develop Branch](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml/badge.svg?branch=dev)](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml)
 
 > ***What is Rocolatey?***
 
