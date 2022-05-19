@@ -2,10 +2,10 @@ name: Rust-Build-Pipeline
 
 on:
   push:
-    branches: [ master ]
-    
+    branches: [ main ]
+
   pull_request:
-    branches: [ master, dev ]
+    branches: [ main, dev ]
 
 env:
   CARGO_TERM_COLOR: always
