@@ -26,6 +26,7 @@ jobs:
       
   build-test-nightly:
     name: Build on nightly rust
+    needs: [build-test-debug]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
