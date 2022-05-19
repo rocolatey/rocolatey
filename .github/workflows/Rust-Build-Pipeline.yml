@@ -2,7 +2,8 @@ name: Rust-Build-Pipeline
 
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master ]
+    
   pull_request:
     branches: [ master, dev ]
 
@@ -22,6 +23,7 @@ jobs:
       run: cargo build --verbose
     - name: Run tests on ${{ matrix.os }}
       run: cargo test --verbose
+      
   build-test-nightly:
     name: Build on nightly rust
     runs-on: ${{ matrix.os }}
@@ -37,4 +39,27 @@ jobs:
     - uses: actions-rs/cargo@v1.0.3
       with: 
         command: test
-    
+        
+  build-release:
+    name: release-binaries
+    needs: [build-test-debug]
+    runs-on: windows-latest
+    strategy: 
+      matrix:
+        target: [ i686-pc-windows-msvc, x86_64-pc-windows-gnu ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          target: ${{ matrix.target }}
+      - name: Build target
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target ${{ matrix.target }}
