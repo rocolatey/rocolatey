@@ -64,3 +64,8 @@ jobs:
           use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
+      - name: Upload Release Build Artifacts
+        uses: actions/upload-artifact@v3
+        with: 
+          name: ${{ matrix.target }}-stable-artifacts
+          path: ${{ github.workspace }}\target\${{ matrix.target }}\release\*.exe
