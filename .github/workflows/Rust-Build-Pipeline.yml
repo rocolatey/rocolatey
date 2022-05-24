@@ -68,4 +68,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with: 
           name: ${{ matrix.target }}-stable-artifacts
-          path: ${{ github.workspace }}\target
+          path: ${{ github.workspace }}\target\${{ matrix.target }}\release\*.exe
