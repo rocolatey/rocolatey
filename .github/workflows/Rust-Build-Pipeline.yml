@@ -65,7 +65,7 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
       - name: Upload Release Build Artifacts
-        uses: actions/download-artifact@v3.0.0
+        uses: actions/upload-artifact@v3
         with: 
           name: ${{ matrix.target }}-stable-artifacts
-          path: ${{ github.workspace }}/target
+          path: ${{ github.workspace }}\target
