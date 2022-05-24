@@ -64,3 +64,5 @@ jobs:
           use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3.0.0
