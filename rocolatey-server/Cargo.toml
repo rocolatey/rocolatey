@@ -10,4 +10,4 @@ edition = "2018"
 rocolatey-lib = { path = "../rocolatey-lib" }
 tokio = { version = "1.21.2", features = ["full"] }
 clap = "3.2.22"
-warp = "0.3.2"
+warp = "0.3.3"
