@@ -439,8 +439,8 @@ fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
     let mut state = ODataParserState::LookingForEntry;
 
     loop {
-        match reader.read_event(&mut buf) {
-            Ok(Event::Start(ref e)) => match e.name() {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(ref e)) => match e.name().as_ref() {
                 b"entry" => state = ODataParserState::InEntry,
                 b"title" => match state {
                     ODataParserState::InEntry => {
@@ -465,7 +465,7 @@ fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
                 }
                 _ => (),
             },
-            Ok(Event::End(ref e)) => match e.name() {
+            Ok(Event::End(ref e)) => match e.name().as_ref() {
                 b"entry" => {
                     println_verbose(&format!(
                         "  package_from_odata: {}, version={}",
