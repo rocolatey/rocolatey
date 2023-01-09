@@ -369,18 +369,26 @@ async fn get_odata_xml_packages(
     };
     let query_string_base: String = format!("{}/Packages?$filter={}", feed.url, latest_filter);
     let total_pkgs = pkgs.len();
-    let mut received_pkgs = 0;
     let mut curr_pkg_idx = 0;
 
     // https://chocolatey.org/api/v2/Packages?$filter=IsLatestVersion and (Id eq 'Chocolatey' or Id eq 'Boxstarter' or Id eq 'vscode' or Id eq 'notepadplusplus')
 
     // NOTE: some feeds may have pagination (such as choco community repo)
-    // need to impl some way to determine maximum possible batch_size!
-    let max_batch_size = 25;
+    // TODO: check if this going to be a problem? (i.e. are only a limited number of packages returned?)
 
-    while received_pkgs < total_pkgs {
+    let mut max_batch_size = 100;
+    let mut max_url_len = 20000;
+
+    while curr_pkg_idx < total_pkgs {
+        // max_batch_size and max_url_len get reduced when communication with the repository fails
+        if max_batch_size == 0 || max_url_len < 100 {
+            panic!("failed to read from repository '{}'", feed.name)
+        }
+
         let mut query_string = format!("{} and (", query_string_base);
         let mut batch_size = 0;
+        let last_query_package_idx = curr_pkg_idx;
+
         loop {
             let curr_pkg = pkgs.get(curr_pkg_idx).unwrap();
             // query_string.push_str(&format!("(Id eq '{}' or Id eq '{}')", curr_pkg.id, curr_pkg.id.to_lowercase()));
@@ -392,7 +400,7 @@ async fn get_odata_xml_packages(
             batch_size += 1;
 
             let url = reqwest::Url::parse(&query_string);
-            if (url.unwrap().as_str().len() > 2000)
+            if (url.unwrap().as_str().len() > max_url_len)
                 || curr_pkg_idx == pkgs.len()
                 || batch_size >= max_batch_size
             {
@@ -404,14 +412,31 @@ async fn get_odata_xml_packages(
 
         println_verbose(&format!(" -> GET: {}", query_string));
         let client = build_reqwest(&feed);
-        let resp_odata = client.get(&query_string).send().await;
-        // println_verbose(&format!(" -> {:#?}", resp_odata));
-        let resp_odata = resp_odata.unwrap().text().await.unwrap();
+        let resp_odata = client.get(&query_string).send().await?;
+
+        if !resp_odata.status().is_success() {
+            println_verbose(&format!("  HTTP STATUS {}", resp_odata.status().as_str()));
+        }
+
+        // if we get a client err response - try reducing url length (first)
+        if resp_odata.status().is_client_error() {
+            max_url_len = max_url_len / 2;
+            println_verbose(&format!("  reduced max url length: {}", max_url_len));
+            curr_pkg_idx = last_query_package_idx;
+            continue;
+        }
+
+        let resp_odata = resp_odata.text().await.unwrap_or_default();
+
+        // if we still get an invalid response - try reducing the batch query size...
+        if resp_odata.is_empty() {
+            max_batch_size -= 1;
+            println_verbose(&format!("  reduced receive batch size: {}", max_batch_size));
+            curr_pkg_idx = last_query_package_idx;
+            continue;
+        }
         query_res.push_str(&resp_odata);
-        // note: not all queried pkgs have to exist on remote, thus we always need to inc batch_size,
-        // no matter if the queried pkgs were received or not!
-        received_pkgs += batch_size;
-        progress_bar.set_position(received_pkgs as u64);
+        progress_bar.set_position(curr_pkg_idx as u64);
     }
 
     Ok(query_res)
