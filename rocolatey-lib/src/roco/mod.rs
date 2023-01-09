@@ -218,7 +218,7 @@ fn get_config_settings_from_attribs(
 
 fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     let mut sources = Vec::new();
-    let choco_dir = get_chocolatey_dir().unwrap();
+    let choco_dir = get_chocolatey_dir().expect("failed to get choco dir");
     let mut cfg_dir = PathBuf::from(choco_dir);
     cfg_dir.push("config/chocolatey.config");
 
