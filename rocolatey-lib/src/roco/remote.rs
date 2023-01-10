@@ -373,11 +373,11 @@ async fn get_odata_xml_packages(
 
     // https://chocolatey.org/api/v2/Packages?$filter=IsLatestVersion and (Id eq 'Chocolatey' or Id eq 'Boxstarter' or Id eq 'vscode' or Id eq 'notepadplusplus')
 
-    // NOTE: some feeds may have pagination (such as choco community repo)
-    // TODO: check if this going to be a problem? (i.e. are only a limited number of packages returned?)
+    let mut max_url_len = 2047;
 
-    let mut max_batch_size = 100;
-    let mut max_url_len = 20000;
+    // NOTE: some feeds may have pagination (such as choco community repo)
+    // determine number of packages returned by single request and use it as batch size for this repo from now on 
+    let (mut max_batch_size, _) = receive_package_delta(feed, 0, 0, prerelease).await;
 
     while curr_pkg_idx < total_pkgs {
         // max_batch_size and max_url_len get reduced when communication with the repository fails
