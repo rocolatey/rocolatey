@@ -35,6 +35,12 @@ pub fn build_cli() -> Command<'static> {
       Command::new("outdated")
         .about("Returns a list of outdated packages.")
         .arg(
+          Arg::new("pkg")
+          .forbid_empty_values(true)
+          .default_value("all")
+          .takes_value(true)
+        )
+        .arg(
           Arg::new("ignore-pinned")
             .long("ignore-pinned")
             .help("ignore any pinned packages"),
