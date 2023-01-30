@@ -90,7 +90,7 @@ _roco() {
             return 0
             ;;
         roco__outdated)
-            opts="-p -r -v -h --ignore-pinned --ignore-unfound --pre --limitoutput --verbose --help"
+            opts="-p -r -v -h --ignore-pinned --ignore-unfound --pre --limitoutput --verbose --help <pkg>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

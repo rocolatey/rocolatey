@@ -60,6 +60,7 @@ _arguments "${_arguments_options[@]}" \
 '--verbose[be verbose]' \
 '-h[Print help information]' \
 '--help[Print help information]' \
+'::pkg:' \
 && ret=0
 ;;
 (source)

@@ -33,9 +33,10 @@ async fn main() {
             let pre = matches.is_present("prerelease");
             let ignore_pinned = matches.is_present("ignore-pinned");
             let ignore_unfound = matches.is_present("ignore-unfound");
+            let pkg  = matches.value_of("pkg").unwrap();
             print!(
                 "{}",
-                get_outdated_packages(r, pre, ignore_pinned, ignore_unfound).await
+                get_outdated_packages(pkg, r, pre, ignore_pinned, ignore_unfound).await
             );
         }
         Some(("source", matches)) => {

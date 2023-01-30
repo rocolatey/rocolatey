@@ -248,13 +248,21 @@ async fn get_latest_remote_packages(
 }
 
 pub async fn get_outdated_packages(
+    pkg: &str,
     limitoutput: bool,
     prerelease: bool,
     ignore_pinned: bool,
     ignore_unfound: bool,
 ) -> String {
     // foreach local package, compare remote version number
-    let local_packages = get_local_packages().expect("failed to get local package list");
+    let mut local_packages = get_local_packages().expect("failed to get local package list");
+    if "all" != pkg {
+       local_packages = local_packages
+                            .iter()
+                            .filter(|p| p.id() == pkg)
+                            .cloned()
+                            .collect();
+    }
     let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
     let remote_feeds = remote_feeds
         .into_iter()
@@ -376,7 +384,7 @@ async fn get_odata_xml_packages(
     let mut max_url_len = 2047;
 
     // NOTE: some feeds may have pagination (such as choco community repo)
-    // determine number of packages returned by single request and use it as batch size for this repo from now on 
+    // determine number of packages returned by single request and use it as batch size for this repo from now on
     let (mut max_batch_size, _) = receive_package_delta(feed, 0, 0, prerelease).await;
 
     while curr_pkg_idx < total_pkgs {
