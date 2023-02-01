@@ -16,7 +16,7 @@ pub fn build_cli() -> Command {
     .help("include prerelease versions");
 
   Command::new("Rocolatey")
-    .version("0.5.4")
+    .version("0.6.0")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
