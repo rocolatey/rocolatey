@@ -12,35 +12,36 @@ async fn main() {
 
     match matches.subcommand() {
         Some(("list", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
-            let r = matches.is_present("limitoutput");
+            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
+            let r = matches.contains_id("limitoutput");
             print!("{}", get_local_packages_text(r));
         }
         Some(("bad", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
-            let r = matches.is_present("limitoutput");
+            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
+            let r = matches.contains_id("limitoutput");
             print!("{}", get_local_bad_packages_text(r));
         }
         Some(("index", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
-            let r = matches.is_present("limitoutput");
-            let pre = matches.is_present("prerelease");
+            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
+            let r = matches.contains_id("limitoutput");
+            let pre = matches.contains_id("prerelease");
             println!("{}", update_package_index(r, pre).await);
         }
         Some(("outdated", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
-            let r = matches.is_present("limitoutput");
-            let pre = matches.is_present("prerelease");
-            let ignore_pinned = matches.is_present("ignore-pinned");
-            let ignore_unfound = matches.is_present("ignore-unfound");
+            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
+            let r = matches.contains_id("limitoutput");
+            let pre = matches.contains_id("prerelease");
+            let ignore_pinned = matches.contains_id("ignore-pinned");
+            let ignore_unfound = matches.contains_id("ignore-unfound");
+            let pkg  = matches.get_one::<String>("pkg").unwrap();
             print!(
                 "{}",
-                get_outdated_packages(r, pre, ignore_pinned, ignore_unfound).await
+                get_outdated_packages(pkg, r, pre, ignore_pinned, ignore_unfound).await
             );
         }
         Some(("source", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.is_present("verbose"));
-            let r = matches.is_present("limitoutput");
+            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
+            let r = matches.contains_id("limitoutput");
             print!("{}", get_sources_text(r));
         }
         _ => {

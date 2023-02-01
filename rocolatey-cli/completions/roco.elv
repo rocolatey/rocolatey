@@ -18,10 +18,10 @@ set edit:completion:arg-completer[roco] = {|@words|
     }
     var completions = [
         &'roco'= {
-            cand -h 'Print help information'
-            cand --help 'Print help information'
-            cand -V 'Print version information'
-            cand --version 'Print version information'
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand -V 'Print version'
+            cand --version 'Print version'
             cand list 'list local installed packages'
             cand bad 'list packages in lib-bad/'
             cand outdated 'Returns a list of outdated packages.'
@@ -33,16 +33,16 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Print help information'
-            cand --help 'Print help information'
+            cand -h 'Print help'
+            cand --help 'Print help'
         }
         &'roco;bad'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Print help information'
-            cand --help 'Print help information'
+            cand -h 'Print help'
+            cand --help 'Print help'
         }
         &'roco;outdated'= {
             cand --ignore-pinned 'ignore any pinned packages'
@@ -53,18 +53,33 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Print help information'
-            cand --help 'Print help information'
+            cand -h 'Print help'
+            cand --help 'Print help'
         }
         &'roco;source'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
-            cand -h 'Print help information'
-            cand --help 'Print help information'
+            cand -h 'Print help'
+            cand --help 'Print help'
         }
         &'roco;help'= {
+            cand list 'list local installed packages'
+            cand bad 'list packages in lib-bad/'
+            cand outdated 'Returns a list of outdated packages.'
+            cand source 'list choco sources'
+            cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'roco;help;list'= {
+        }
+        &'roco;help;bad'= {
+        }
+        &'roco;help;outdated'= {
+        }
+        &'roco;help;source'= {
+        }
+        &'roco;help;help'= {
         }
     ]
     $completions[$command]

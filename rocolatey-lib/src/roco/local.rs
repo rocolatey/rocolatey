@@ -146,8 +146,8 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
     let mut tag: NuspecTag = NuspecTag::Null;
 
     loop {
-        match reader.read_event(&mut buf) {
-            Ok(Event::Start(ref e)) => match e.name() {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(ref e)) => match e.name().as_ref() {
                 b"id" => tag = NuspecTag::Id,
                 b"version" => tag = NuspecTag::Version,
                 _ => tag = NuspecTag::Null,

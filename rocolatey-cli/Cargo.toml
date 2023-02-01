@@ -1,6 +1,6 @@
 [package]
 name = "roco"
-version = "0.5.5"
+version = "0.6.0"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
 edition = "2018"
 
@@ -8,13 +8,10 @@ edition = "2018"
 
 [dependencies]
 rocolatey-lib = { path = "../rocolatey-lib" }
-tokio = { version = "1.18.4", features = ["full"] }
-clap = "3.1.18"
-
-
+tokio = { version = "1.21.2", features = ["full"] }
+clap = "4.1.1"
 
 [build-dependencies]
-clap = "3.1.18"
-clap_generate = "3.0.3"
-clap_complete = "*"
+clap = "4.1.1"
+clap_complete = "4.1.1"
 

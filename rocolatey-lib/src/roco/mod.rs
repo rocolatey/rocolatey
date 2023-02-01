@@ -141,7 +141,7 @@ fn xml_attribs_to_map(
         .map(|a| {
             let a = a.unwrap();
             (
-                String::from_utf8(Vec::from(a.key)).unwrap(),
+                String::from_utf8(Vec::from(a.key.as_ref())).unwrap(),
                 String::from_utf8(Vec::from(a.value)).unwrap(),
             )
         })
@@ -218,7 +218,7 @@ fn get_config_settings_from_attribs(
 
 fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     let mut sources = Vec::new();
-    let choco_dir = get_chocolatey_dir().unwrap();
+    let choco_dir = get_chocolatey_dir().expect("failed to get choco dir");
     let mut cfg_dir = PathBuf::from(choco_dir);
     cfg_dir.push("config/chocolatey.config");
 
@@ -232,8 +232,8 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
                 reader.trim_text(true);
                 let mut buf = Vec::new();
                 loop {
-                    match reader.read_event(&mut buf) {
-                        Ok(Event::Empty(ref e)) => match e.name() {
+                    match reader.read_event_into(&mut buf) {
+                        Ok(Event::Empty(ref e)) => match e.name().as_ref() {
                             b"source" => {
                                 sources.push(get_feed_from_source_attribs(&mut e.attributes()));
                             }
@@ -245,7 +245,7 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
                             }
                             _ => {}
                         },
-                        Ok(Event::Start(ref e)) => match e.name() {
+                        Ok(Event::Start(ref e)) => match e.name().as_ref() {
                             b"source" => {
                                 sources.push(get_feed_from_source_attribs(&mut e.attributes()));
                             }

@@ -1,7 +1,7 @@
 extern crate clap;
 use clap::{Command, Arg};
 
-pub fn build_cli() -> Command<'static> {
+pub fn build_cli() -> Command {
   let common_arg_limitoutput = Arg::new("limitoutput")
     .short('r')
     .long("limitoutput")
@@ -16,7 +16,7 @@ pub fn build_cli() -> Command<'static> {
     .help("include prerelease versions");
 
   Command::new("Rocolatey")
-    .version("0.5.4")
+    .version("0.6.0")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
@@ -34,6 +34,10 @@ pub fn build_cli() -> Command<'static> {
     .subcommand(
       Command::new("outdated")
         .about("Returns a list of outdated packages.")
+        .arg(
+          Arg::new("pkg")
+          .default_value("all")
+        )
         .arg(
           Arg::new("ignore-pinned")
             .long("ignore-pinned")

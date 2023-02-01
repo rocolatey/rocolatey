@@ -15,10 +15,10 @@ _roco() {
 
     local context curcontext="$curcontext" state line
     _arguments "${_arguments_options[@]}" \
-'-h[Print help information]' \
-'--help[Print help information]' \
-'-V[Print version information]' \
-'--version[Print version information]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
 ":: :_roco_commands" \
 "*::: :->Rocolatey" \
 && ret=0
@@ -30,52 +30,84 @@ _roco() {
         case $line[1] in
             (list)
 _arguments "${_arguments_options[@]}" \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
-'-v[be verbose]' \
-'--verbose[be verbose]' \
-'-h[Print help information]' \
-'--help[Print help information]' \
+'-r+[limit the output to essential information]: : ' \
+'--limitoutput=[limit the output to essential information]: : ' \
+'-v+[be verbose]: : ' \
+'--verbose=[be verbose]: : ' \
+'-h[Print help]' \
+'--help[Print help]' \
 && ret=0
 ;;
 (bad)
 _arguments "${_arguments_options[@]}" \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
-'-v[be verbose]' \
-'--verbose[be verbose]' \
-'-h[Print help information]' \
-'--help[Print help information]' \
+'-r+[limit the output to essential information]: : ' \
+'--limitoutput=[limit the output to essential information]: : ' \
+'-v+[be verbose]: : ' \
+'--verbose=[be verbose]: : ' \
+'-h[Print help]' \
+'--help[Print help]' \
 && ret=0
 ;;
 (outdated)
 _arguments "${_arguments_options[@]}" \
-'--ignore-pinned[ignore any pinned packages]' \
-'--ignore-unfound[ignore any unfound packages]' \
-'-p[include prerelease versions]' \
-'--pre[include prerelease versions]' \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
-'-v[be verbose]' \
-'--verbose[be verbose]' \
-'-h[Print help information]' \
-'--help[Print help information]' \
+'--ignore-pinned=[ignore any pinned packages]: : ' \
+'--ignore-unfound=[ignore any unfound packages]: : ' \
+'-p+[include prerelease versions]: : ' \
+'--pre=[include prerelease versions]: : ' \
+'-r+[limit the output to essential information]: : ' \
+'--limitoutput=[limit the output to essential information]: : ' \
+'-v+[be verbose]: : ' \
+'--verbose=[be verbose]: : ' \
+'-h[Print help]' \
+'--help[Print help]' \
+'::pkg:' \
 && ret=0
 ;;
 (source)
 _arguments "${_arguments_options[@]}" \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
-'-v[be verbose]' \
-'--verbose[be verbose]' \
-'-h[Print help information]' \
-'--help[Print help information]' \
+'-r+[limit the output to essential information]: : ' \
+'--limitoutput=[limit the output to essential information]: : ' \
+'-v+[be verbose]: : ' \
+'--verbose=[be verbose]: : ' \
+'-h[Print help]' \
+'--help[Print help]' \
 && ret=0
 ;;
 (help)
 _arguments "${_arguments_options[@]}" \
-'*::subcommand -- The subcommand whose help message to display:' \
+":: :_roco__help_commands" \
+"*::: :->help" \
 && ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:roco-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(bad)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(outdated)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(source)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+        esac
+    ;;
+esac
 ;;
         esac
     ;;
@@ -98,20 +130,51 @@ _roco__bad_commands() {
     local commands; commands=()
     _describe -t commands 'roco bad commands' commands "$@"
 }
+(( $+functions[_roco__help__bad_commands] )) ||
+_roco__help__bad_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help bad commands' commands "$@"
+}
 (( $+functions[_roco__help_commands] )) ||
 _roco__help_commands() {
-    local commands; commands=()
+    local commands; commands=(
+'list:list local installed packages' \
+'bad:list packages in lib-bad/' \
+'outdated:Returns a list of outdated packages.' \
+'source:list choco sources' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
     _describe -t commands 'roco help commands' commands "$@"
+}
+(( $+functions[_roco__help__help_commands] )) ||
+_roco__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help help commands' commands "$@"
+}
+(( $+functions[_roco__help__list_commands] )) ||
+_roco__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help list commands' commands "$@"
 }
 (( $+functions[_roco__list_commands] )) ||
 _roco__list_commands() {
     local commands; commands=()
     _describe -t commands 'roco list commands' commands "$@"
 }
+(( $+functions[_roco__help__outdated_commands] )) ||
+_roco__help__outdated_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help outdated commands' commands "$@"
+}
 (( $+functions[_roco__outdated_commands] )) ||
 _roco__outdated_commands() {
     local commands; commands=()
     _describe -t commands 'roco outdated commands' commands "$@"
+}
+(( $+functions[_roco__help__source_commands] )) ||
+_roco__help__source_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help source commands' commands "$@"
 }
 (( $+functions[_roco__source_commands] )) ||
 _roco__source_commands() {

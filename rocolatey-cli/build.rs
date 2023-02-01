@@ -12,12 +12,17 @@ fn main() {
 
   let path = generate_to::<Bash, _, _>(Bash, &mut app, appname, &outdir);
   println!("cargo:warning=> Bash completion file: {:?}", path);
+
   let path = generate_to::<Fish, _, _>(Fish, &mut app, appname, &outdir);
   println!("cargo:warning=> Fish completion file: {:?}", path);
+
   let path = generate_to::<Zsh, _, _>(Zsh, &mut app, appname, &outdir);
   println!("cargo:warning=> Zsh completion file: {:?}", path);
+
   let path = generate_to::<PowerShell, _, _>(PowerShell, &mut app, appname, &outdir);
   println!("cargo:warning=> PowerShell completion file: {:?}", path);
+  
   let path = generate_to::<Elvish, _, _>(Elvish, &mut app, appname, &outdir);
   println!("cargo:warning=> Elvish completion file: {:?}", path);
+  
 }
