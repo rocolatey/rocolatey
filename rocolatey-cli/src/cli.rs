@@ -1,18 +1,21 @@
 extern crate clap;
-use clap::{Command, Arg};
+use clap::{Command, Arg, ArgAction};
 
 pub fn build_cli() -> Command {
   let common_arg_limitoutput = Arg::new("limitoutput")
     .short('r')
     .long("limitoutput")
+    .action(ArgAction::SetTrue)
     .help("limit the output to essential information");
   let common_arg_verbose = Arg::new("verbose")
     .short('v')
     .long("verbose")
+    .action(ArgAction::SetTrue)
     .help("be verbose");
   let common_arg_prerelease = Arg::new("prerelease")
     .short('p')
     .long("pre")
+    .action(ArgAction::SetTrue)
     .help("include prerelease versions");
 
   Command::new("Rocolatey")
@@ -41,11 +44,13 @@ pub fn build_cli() -> Command {
         .arg(
           Arg::new("ignore-pinned")
             .long("ignore-pinned")
+            .action(ArgAction::SetTrue)
             .help("ignore any pinned packages"),
         )
         .arg(
           Arg::new("ignore-unfound")
             .long("ignore-unfound")
+            .action(ArgAction::SetTrue)
             .help("ignore any unfound packages"),
         )
         .arg(&common_arg_prerelease)
