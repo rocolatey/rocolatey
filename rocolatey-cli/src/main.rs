@@ -12,27 +12,27 @@ async fn main() {
 
     match matches.subcommand() {
         Some(("list", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
-            let r = matches.contains_id("limitoutput");
+            rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
+            let r = matches.get_flag("limitoutput");
             print!("{}", get_local_packages_text(r));
         }
         Some(("bad", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
-            let r = matches.contains_id("limitoutput");
+            rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
+            let r = matches.get_flag("limitoutput");
             print!("{}", get_local_bad_packages_text(r));
         }
         Some(("index", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
-            let r = matches.contains_id("limitoutput");
-            let pre = matches.contains_id("prerelease");
+            rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
+            let r = matches.get_flag("limitoutput");
+            let pre = matches.get_flag("prerelease");
             println!("{}", update_package_index(r, pre).await);
         }
         Some(("outdated", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
-            let r = matches.contains_id("limitoutput");
-            let pre = matches.contains_id("prerelease");
-            let ignore_pinned = matches.contains_id("ignore-pinned");
-            let ignore_unfound = matches.contains_id("ignore-unfound");
+            rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
+            let r = matches.get_flag("limitoutput");
+            let pre = matches.get_flag("prerelease");
+            let ignore_pinned = matches.get_flag("ignore-pinned");
+            let ignore_unfound = matches.get_flag("ignore-unfound");
             let pkg  = matches.get_one::<String>("pkg").unwrap();
             print!(
                 "{}",
@@ -40,8 +40,8 @@ async fn main() {
             );
         }
         Some(("source", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.contains_id("verbose"));
-            let r = matches.contains_id("limitoutput");
+            rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
+            let r = matches.get_flag("limitoutput");
             print!("{}", get_sources_text(r));
         }
         _ => {

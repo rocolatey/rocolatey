@@ -30,34 +30,34 @@ _roco() {
         case $line[1] in
             (list)
 _arguments "${_arguments_options[@]}" \
-'-r+[limit the output to essential information]: : ' \
-'--limitoutput=[limit the output to essential information]: : ' \
-'-v+[be verbose]: : ' \
-'--verbose=[be verbose]: : ' \
+'-r[limit the output to essential information]' \
+'--limitoutput[limit the output to essential information]' \
+'-v[be verbose]' \
+'--verbose[be verbose]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (bad)
 _arguments "${_arguments_options[@]}" \
-'-r+[limit the output to essential information]: : ' \
-'--limitoutput=[limit the output to essential information]: : ' \
-'-v+[be verbose]: : ' \
-'--verbose=[be verbose]: : ' \
+'-r[limit the output to essential information]' \
+'--limitoutput[limit the output to essential information]' \
+'-v[be verbose]' \
+'--verbose[be verbose]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (outdated)
 _arguments "${_arguments_options[@]}" \
-'--ignore-pinned=[ignore any pinned packages]: : ' \
-'--ignore-unfound=[ignore any unfound packages]: : ' \
-'-p+[include prerelease versions]: : ' \
-'--pre=[include prerelease versions]: : ' \
-'-r+[limit the output to essential information]: : ' \
-'--limitoutput=[limit the output to essential information]: : ' \
-'-v+[be verbose]: : ' \
-'--verbose=[be verbose]: : ' \
+'--ignore-pinned[ignore any pinned packages]' \
+'--ignore-unfound[ignore any unfound packages]' \
+'-p[include prerelease versions]' \
+'--pre[include prerelease versions]' \
+'-r[limit the output to essential information]' \
+'--limitoutput[limit the output to essential information]' \
+'-v[be verbose]' \
+'--verbose[be verbose]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '::pkg:' \
@@ -65,10 +65,10 @@ _arguments "${_arguments_options[@]}" \
 ;;
 (source)
 _arguments "${_arguments_options[@]}" \
-'-r+[limit the output to essential information]: : ' \
-'--limitoutput=[limit the output to essential information]: : ' \
-'-v+[be verbose]: : ' \
-'--verbose=[be verbose]: : ' \
+'-r[limit the output to essential information]' \
+'--limitoutput[limit the output to essential information]' \
+'-v[be verbose]' \
+'--verbose[be verbose]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
