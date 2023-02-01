@@ -1,7 +1,7 @@
 extern crate clap;
 use clap::{Command, Arg};
 
-pub fn build_cli() -> Command<'static> {
+pub fn build_cli() -> Command {
   let common_arg_limitoutput = Arg::new("limitoutput")
     .short('r')
     .long("limitoutput")
@@ -36,9 +36,7 @@ pub fn build_cli() -> Command<'static> {
         .about("Returns a list of outdated packages.")
         .arg(
           Arg::new("pkg")
-          .forbid_empty_values(true)
           .default_value("all")
-          .takes_value(true)
         )
         .arg(
           Arg::new("ignore-pinned")
