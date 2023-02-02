@@ -385,7 +385,11 @@ async fn get_odata_xml_packages(
 
     // NOTE: some feeds may have pagination (such as choco community repo)
     // determine number of packages returned by single request and use it as batch size for this repo from now on
-    let (mut max_batch_size, _) = receive_package_delta(feed, 0, 0, prerelease).await;
+    let (mut max_batch_size, _) = if total_pkgs == 1{
+        (1 as u32, "".to_string())
+    } else {
+        receive_package_delta(feed, 0, 0, prerelease).await
+    };
 
     while curr_pkg_idx < total_pkgs {
         // max_batch_size and max_url_len get reduced when communication with the repository fails
