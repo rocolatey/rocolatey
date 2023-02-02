@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$rocoTabCompletion = Join-Path $env:ChocolateyPackageFolder "tools\RocoTabCompletion.psm1"
+$pkgBase = Get-ChocolateyPath -PathType 'PackagePath'
+$rocoTabCompletion = Join-Path $pkgBase "tools\RocoTabCompletion.psm1"
 
 if ($profile -And (Test-Path $profile)) {
   if ((Get-Content $profile) -notmatch "### RocolateyTabCompletion ###") {

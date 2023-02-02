@@ -168,7 +168,8 @@ fn get_feed_from_source_attribs(
         name, url, disabled
     ));
 
-    let cred = match user.is_some() && password.is_some() {
+    // NOTE: don't need to decrypt when feed is disabled anyway
+    let cred = match !disabled && user.is_some() && password.is_some() {
         true => Some(Credential {
             user: user.unwrap().clone(),
             pass: decrypt_choco_config_string(password.unwrap()),
