@@ -1,10 +1,11 @@
 $ErrorActionPreference = "Stop"
 
-$pkgBase = Get-ChocolateyPath -PathType 'PackagePath'
-$rocoTabCompletion = Join-Path $pkgBase "tools\RocoTabCompletion.psm1"
-
+# 'Get-ChocolateyPath' is only available starting in choco 1.2+
+# ... thus we cannot rely on it being available :-/
+# $pkgBase = Get-ChocolateyPath -PathType 'PackagePath'
+$rocoTabCompletion = Join-Path $env:ChocolateyInstall "lib\${env:ChocolateyPackageName}\tools\RocoTabCompletion.psm1"
 if ($profile -And (Test-Path $profile)) {
-  if ((Get-Content $profile) -notmatch "### RocolateyTabCompletion ###") {
+  if (-Not ((Get-Content $profile) -match "### RocolateyTabCompletion ###")) {
     @"
 `n
 ### RocolateyTabCompletion ###
