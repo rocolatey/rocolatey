@@ -50,8 +50,12 @@ _arguments "${_arguments_options[@]}" \
 ;;
 (outdated)
 _arguments "${_arguments_options[@]}" \
-'--ignore-pinned[ignore any pinned packages]' \
-'--ignore-unfound[ignore any unfound packages]' \
+'--choco-mode[enables '\''ignore-pinned'\'' and '\''ignore-unfound'\'' 
+(otherwise they are true by default, even if not set)]' \
+'--ignore-pinned[ignore any pinned packages 
+(default, unless '\''choco-mode'\'' is set)]' \
+'--ignore-unfound[ignore any unfound packages 
+(default, unless '\''choco-mode'\'' is set)]' \
 '-p[include prerelease versions]' \
 '--pre[include prerelease versions]' \
 '-r[limit the output to essential information]' \

@@ -31,8 +31,9 @@ async fn main() {
             rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
             let r = matches.get_flag("limitoutput");
             let pre = matches.get_flag("prerelease");
-            let ignore_pinned = matches.get_flag("ignore-pinned");
-            let ignore_unfound = matches.get_flag("ignore-unfound");
+            let choco_compat = matches.get_flag("choco-compat");
+            let ignore_pinned = !choco_compat || matches.get_flag("ignore-pinned");
+            let ignore_unfound = !choco_compat || matches.get_flag("ignore-unfound");
             let pkg  = matches.get_one::<String>("pkg").unwrap();
             print!(
                 "{}",
