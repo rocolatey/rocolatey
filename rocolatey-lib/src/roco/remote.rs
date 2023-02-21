@@ -82,52 +82,6 @@ async fn receive_package_delta(
     (c as u32, query_res)
 }
 
-async fn update_feed_index(feed: &Feed, limitoutput: bool, prerelease: bool) -> String {
-    let total_pkg_count = get_package_count_on_feed(feed, prerelease).await;
-    println!(
-        "there are a total of {} packages on feed {}",
-        total_pkg_count, feed.name
-    );
-    let f = File::create(format!("{}_dl.xml", feed.name)).expect("Unable to create file");
-    let mut f = BufWriter::new(f);
-    let mut batch_size = 0;
-    let mut received_packages = 0;
-    let progress_bar = match limitoutput {
-        true => indicatif::ProgressBar::hidden(),
-        false => indicatif::ProgressBar::new(total_pkg_count as u64),
-    };
-    while received_packages < total_pkg_count {
-        let (a, req_res) =
-            receive_package_delta(feed, batch_size, received_packages, prerelease).await;
-        if a != batch_size {
-            println!("receiving packages in batches of {} per request", a);
-        }
-        batch_size = a;
-        f.write_all(req_res.as_bytes())
-            .expect("unable to write data");
-        if 0 == batch_size {
-            println!("failed to receive further packages... stop!");
-            break;
-        }
-        received_packages += batch_size;
-        progress_bar.set_position(received_packages as u64);
-    }
-    progress_bar.finish();
-    f.flush().expect("failed to flush file buffer");
-    // TODO - "shrink" pkg index files - only keep id + version (faster lookup later on)
-
-    String::from("update_feed_index -> not implemented")
-}
-
-pub async fn update_package_index(limitoutput: bool, prerelease: bool) -> String {
-    let mut s = String::new();
-    let feeds = get_choco_sources().expect("failed to get choco sources");
-    for f in feeds.into_iter().filter(|f| f.disabled == false) {
-        s.push_str(&update_feed_index(&f, limitoutput, prerelease).await);
-    }
-    s
-}
-
 async fn get_latest_remote_packages_on_feed(
     progress_bar: &indicatif::ProgressBar,
     pkgs: &Vec<Package>,
@@ -257,11 +211,11 @@ pub async fn get_outdated_packages(
     // foreach local package, compare remote version number
     let mut local_packages = get_local_packages().expect("failed to get local package list");
     if "all" != pkg {
-       local_packages = local_packages
-                            .iter()
-                            .filter(|p| p.id() == pkg)
-                            .cloned()
-                            .collect();
+        local_packages = local_packages
+            .iter()
+            .filter(|p| p.id() == pkg)
+            .cloned()
+            .collect();
     }
     let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
     let remote_feeds = remote_feeds
@@ -385,7 +339,7 @@ async fn get_odata_xml_packages(
 
     // NOTE: some feeds may have pagination (such as choco community repo)
     // determine number of packages returned by single request and use it as batch size for this repo from now on
-    let (mut max_batch_size, _) = if total_pkgs == 1{
+    let (mut max_batch_size, _) = if total_pkgs == 1 {
         (1 as u32, "".to_string())
     } else {
         receive_package_delta(feed, 0, 0, prerelease).await

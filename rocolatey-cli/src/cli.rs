@@ -69,12 +69,4 @@ pub fn build_cli() -> Command {
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
-    /*
-    .subcommand(
-      Command::new("index")
-        .about("crate package index")
-        .arg(&common_arg_limitoutput)
-        .arg(&common_arg_verbose)
-        .arg(&common_arg_prerelease),
-    )`*/
 }

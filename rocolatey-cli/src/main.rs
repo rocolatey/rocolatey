@@ -4,7 +4,7 @@ mod cli;
 use rocolatey_lib::roco::local::{
     get_local_bad_packages_text, get_local_packages_text, get_sources_text,
 };
-use rocolatey_lib::roco::remote::{get_outdated_packages, update_package_index};
+use rocolatey_lib::roco::remote::{get_outdated_packages};
 
 #[tokio::main]
 async fn main() {
@@ -20,12 +20,6 @@ async fn main() {
             rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
             let r = matches.get_flag("limitoutput");
             print!("{}", get_local_bad_packages_text(r));
-        }
-        Some(("index", matches)) => {
-            rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
-            let r = matches.get_flag("limitoutput");
-            let pre = matches.get_flag("prerelease");
-            println!("{}", update_package_index(r, pre).await);
         }
         Some(("outdated", matches)) => {
             rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
