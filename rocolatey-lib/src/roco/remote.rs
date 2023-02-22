@@ -1,19 +1,46 @@
-use quick_xml::events::Event;
-use quick_xml::Reader;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use tokio;
 
 use crate::println_verbose;
-use crate::roco::local::get_local_packages;
-use crate::roco::{get_choco_sources, semver_is_newer, Feed, OutdatedInfo, Package};
+use crate::roco::{get_choco_sources,  Feed, FeedType, OutdatedInfo, Package};
+use crate::roco::{local, semver, nuget2, nuget3};
+
+impl Feed {
+    pub async fn evaluate_feed_type(&mut self) {
+        if self.feed_type != FeedType::Unknown {
+            // already evaluated
+            return;
+        }
+
+        // TODO: actually not sure if this is safe enough
+        let https_regex = regex::Regex::new(r"^https?://.+").unwrap();
+        // if it's not a http(s)-like url, we default to type local/filesystem/unc
+        if !https_regex.is_match(&self.url) {
+            self.feed_type = FeedType::LocalFileSystem;
+            return;
+        }
+
+        // we have to determine if NuGet version of feed
+        // -> setup reqwest, try to fetch index.json -> v3, else: v2
+        let request = build_reqwest(self);
+        let nuget_v3_index_url = format!("{}/index.json", &self.url);
+        let resp = request.get(nuget_v3_index_url).send().await;
+        // TODO: don't unwrap, propagate error!
+        let resp = resp.unwrap();
+        if resp.status().is_success() {
+            println_verbose(&format!("feed {} looks like NuGet V3", self.name));
+            self.feed_type = FeedType::NuGetV3;
+            self.service_resources = nuget3::read_service_index(resp.text().await.unwrap_or_default());
+        } else {
+            println_verbose(&format!("feed {} is most likely NuGet V2", self.name));
+            self.feed_type = FeedType::NuGetV2;
+        }
+    }
+}
 
 // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
-// https://joelverhagen.github.io/NuGetUndocs/
-// http://docs.oasis-open.org/odata/odata/v4.0/errata03/os/complete/part1-protocol/odata-v4.0-errata03-os-part1-protocol-complete.html
 
-fn build_reqwest(feed: &Feed) -> reqwest::Client {
+pub(crate) fn build_reqwest(feed: &Feed) -> reqwest::Client {
     let mut rbuilder = reqwest::Client::builder();
     if feed.proxy.is_some() {
         let proxy = feed.proxy.as_ref().unwrap();
@@ -42,46 +69,6 @@ fn build_reqwest(feed: &Feed) -> reqwest::Client {
         .unwrap()
 }
 
-async fn get_package_count_on_feed(f: &Feed, prerelease: bool) -> u32 {
-    let latest_filter = match prerelease {
-        true => "$filter=IsAbsoluteLatestVersion",
-        false => "$filter=IsLatestVersion",
-    };
-    let rs = format!("{}/Packages()/$count?{}", f.url, latest_filter);
-
-    let client = build_reqwest(&f);
-    let resp_pkg_count = client.get(&rs).send().await;
-    let total_pkg_count = resp_pkg_count.unwrap().text().await.unwrap();
-    let total_pkg_count = total_pkg_count.parse::<u32>().unwrap();
-    total_pkg_count
-}
-
-async fn receive_package_delta(
-    feed: &Feed,
-    batch_size: u32,
-    batch_offset: u32,
-    prerelease: bool,
-) -> (u32, String) {
-    let base_uri = format!("{}/Packages()", feed.url);
-    let latest_filter = match prerelease {
-        true => "$filter=IsAbsoluteLatestVersion",
-        false => "$filter=IsLatestVersion",
-    };
-    let rs = match batch_size {
-        0 => format!("{}?{}&$skip={}", base_uri, latest_filter, batch_offset),
-        _ => format!(
-            "{}?{}&$top={}&$skip={}",
-            base_uri, latest_filter, batch_size, batch_offset
-        ),
-    };
-
-    let client = build_reqwest(&feed);
-    let resp = client.get(&rs).send().await;
-    let query_res = resp.unwrap().text().await.unwrap();
-    let c = query_res.matches("</entry>").count();
-    (c as u32, query_res)
-}
-
 async fn get_latest_remote_packages_on_feed(
     progress_bar: &indicatif::ProgressBar,
     pkgs: &Vec<Package>,
@@ -89,75 +76,26 @@ async fn get_latest_remote_packages_on_feed(
     prerelease: bool,
 ) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
     progress_bar.set_message(format!("receive packages from '{}'", feed.name));
-    // else - recurse file search + filename analysis
-    let https_regex = regex::Regex::new(r"^https?://.+").unwrap();
-    match https_regex.is_match(&feed.url) {
-        true => {
-            let odata_xml = get_odata_xml_packages(progress_bar, pkgs, feed, prerelease)
-                .await
-                .expect("failed to receive odata for packages");
-            Ok(get_packages_from_odata(&odata_xml))
-        }
-        false => {
-            let nupkg_files = get_nupkgs_from_path(pkgs, feed, prerelease)
+    match &feed.feed_type {
+        FeedType::LocalFileSystem => {
+            let nupkg_files = local::get_nupkgs_from_path(pkgs, feed, prerelease)
                 .expect("failed to read package info from file system");
             Ok(nupkg_files)
         }
-    }
-}
-
-fn get_package_from_nupkg(filename: &str) -> Option<Package> {
-    // println!(" .. pkg from filename: {}", filename);
-    // TODO - is this sufficient? / do we need to extract the nuspec from the nupkg in order to get the id / version ?
-    let semver_regex = regex::Regex::new(r#"^(.+?)\.(((\d+\.?)+)(-.+)?)\.nupkg$"#).unwrap();
-    match semver_regex.captures(filename) {
-        Some(captures) => {
-            // println!("{:#?}", captures);
-            Some(Package {
-                id: captures
-                    .get(1)
-                    .map_or(String::from(""), |m| String::from(m.as_str())),
-                version: captures
-                    .get(2)
-                    .map_or(String::from(""), |m| String::from(m.as_str())),
-                pinned: false,
-            })
+        FeedType::NuGetV2 => {
+            let odata_xml = nuget2::get_odata_xml_packages(progress_bar, pkgs, feed, prerelease)
+                .await
+                .expect("failed to receive odata for packages");
+            Ok(nuget2::get_packages_from_odata(&odata_xml))
         }
-        None => {
-            println!("ERROR: failed to get package from filename '{}'", filename);
-            None
+        FeedType::NuGetV3 => {
+            let packages = nuget3::get_remote_packages(progress_bar, pkgs, feed, prerelease)
+                .await
+                .expect("failed to receive packages from NuGet v3 feed");
+            Ok(packages)
         }
+        FeedType::Unknown => Err("cannot communicate with unknown feed type")?,
     }
-}
-
-fn get_nupkgs_from_path(
-    pkgs: &Vec<Package>,
-    feed: &Feed,
-    prerelease: bool,
-) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
-    let mut feed_dir = PathBuf::from(&feed.url);
-    feed_dir.push("**/*.nupkg");
-
-    let mut packages: Vec<Package> = Vec::new();
-    for entry in glob::glob(&feed_dir.to_string_lossy())? {
-        match get_package_from_nupkg(entry?.file_name().unwrap().to_str().unwrap()) {
-            Some(p) => {
-                let version = semver::Version::parse(&p.version).unwrap();
-                if !prerelease && !version.pre.is_empty() {
-                    continue;
-                }
-                if pkgs
-                    .iter()
-                    .any(|s| s.id.to_lowercase() == p.id.to_lowercase())
-                {
-                    packages.push(p);
-                }
-            }
-            None => {}
-        }
-    }
-
-    Ok(packages)
 }
 
 async fn get_latest_remote_packages(
@@ -182,7 +120,7 @@ async fn get_latest_remote_packages(
                     "  pkg {} also exists on remote {}, version={}",
                     lowercase_id, f.name, p.version
                 ));
-                if !semver_is_newer(&p.version, remote_version) {
+                if !semver::is_newer(&p.version, remote_version) {
                     println_verbose(&format!(
                         "  skip: already know newer version {}",
                         remote_version
@@ -209,19 +147,36 @@ pub async fn get_outdated_packages(
     ignore_unfound: bool,
 ) -> String {
     // foreach local package, compare remote version number
-    let mut local_packages = get_local_packages().expect("failed to get local package list");
+    let mut local_packages = local::get_local_packages().expect("failed to get local package list");
     if "all" != pkg {
         local_packages = local_packages
-            .iter()
+            .into_iter()
             .filter(|p| p.id() == pkg)
-            .cloned()
             .collect();
     }
     let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
-    let remote_feeds = remote_feeds
+    let remote_feeds: Vec<Feed> = remote_feeds
         .into_iter()
         .filter(|f| f.disabled == false)
         .collect();
+
+    // call feed.evaluate_feed_type() on each feed in remote_feeds (await!)
+    let tasks: Vec<_> = remote_feeds
+        .into_iter()
+        .map(|mut feed| {
+            tokio::spawn(async {
+                feed.evaluate_feed_type().await;
+                feed
+            })
+        })
+        .collect();
+    // await the tasks for resolve's to complete and give back our items
+    let mut feeds = vec![];
+    for task in tasks {
+        feeds.push(task.await.unwrap());
+    }
+    let remote_feeds = feeds;
+
     let progress_bar = match limitoutput {
         true => indicatif::ProgressBar::hidden(),
         false => indicatif::ProgressBar::new(local_packages.len() as u64),
@@ -253,7 +208,7 @@ pub async fn get_outdated_packages(
                     "  check latest remote pkg {}, version={} against local version={}",
                     l.id, u.version, l.version
                 ));
-                if semver_is_newer(&u.version, &l.version) {
+                if semver::is_newer(&u.version, &l.version) {
                     oi.push(OutdatedInfo {
                         id: l.id,
                         local_version: l.version.clone(),
@@ -316,178 +271,4 @@ pub async fn get_outdated_packages(
         }
     }
     res
-}
-
-async fn get_odata_xml_packages(
-    progress_bar: &indicatif::ProgressBar,
-    pkgs: &Vec<Package>,
-    feed: &Feed,
-    prerelease: bool,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let mut query_res = String::new();
-    let latest_filter = match prerelease {
-        true => "IsAbsoluteLatestVersion",
-        false => "IsLatestVersion",
-    };
-    let query_string_base: String = format!("{}/Packages?$filter={}", feed.url, latest_filter);
-    let total_pkgs = pkgs.len();
-    let mut curr_pkg_idx = 0;
-
-    // https://chocolatey.org/api/v2/Packages?$filter=IsLatestVersion and (Id eq 'Chocolatey' or Id eq 'Boxstarter' or Id eq 'vscode' or Id eq 'notepadplusplus')
-
-    let mut max_url_len = 2047;
-
-    // NOTE: some feeds may have pagination (such as choco community repo)
-    // determine number of packages returned by single request and use it as batch size for this repo from now on
-    let (mut max_batch_size, _) = if total_pkgs == 1 {
-        (1 as u32, "".to_string())
-    } else {
-        receive_package_delta(feed, 0, 0, prerelease).await
-    };
-
-    while curr_pkg_idx < total_pkgs {
-        // max_batch_size and max_url_len get reduced when communication with the repository fails
-        if max_batch_size == 0 || max_url_len < 100 {
-            panic!("failed to read from repository '{}'", feed.name)
-        }
-
-        let mut query_string = format!("{} and (", query_string_base);
-        let mut batch_size = 0;
-        let last_query_package_idx = curr_pkg_idx;
-
-        loop {
-            let curr_pkg = pkgs.get(curr_pkg_idx).unwrap();
-            // query_string.push_str(&format!("(Id eq '{}' or Id eq '{}')", curr_pkg.id, curr_pkg.id.to_lowercase()));
-            query_string.push_str(&format!(
-                "(tolower(Id) eq '{}')",
-                curr_pkg.id.to_lowercase()
-            ));
-            curr_pkg_idx += 1;
-            batch_size += 1;
-
-            let url = reqwest::Url::parse(&query_string);
-            if (url.unwrap().as_str().len() > max_url_len)
-                || curr_pkg_idx == pkgs.len()
-                || batch_size >= max_batch_size
-            {
-                query_string.push_str(")");
-                break;
-            }
-            query_string.push_str(" or ");
-        }
-
-        println_verbose(&format!(" -> GET: {}", query_string));
-        let client = build_reqwest(&feed);
-        let resp_odata = client.get(&query_string).send().await?;
-
-        if !resp_odata.status().is_success() {
-            println_verbose(&format!("  HTTP STATUS {}", resp_odata.status().as_str()));
-        }
-
-        // if we get a client err response - try reducing url length (first)
-        if resp_odata.status().is_client_error() {
-            max_url_len = max_url_len / 2;
-            println_verbose(&format!("  reduced max url length: {}", max_url_len));
-            curr_pkg_idx = last_query_package_idx;
-            continue;
-        }
-
-        let resp_odata = resp_odata.text().await.unwrap_or_default();
-
-        // if we still get an invalid response - try reducing the batch query size...
-        if resp_odata.is_empty() {
-            max_batch_size -= 1;
-            println_verbose(&format!("  reduced receive batch size: {}", max_batch_size));
-            curr_pkg_idx = last_query_package_idx;
-            continue;
-        }
-        query_res.push_str(&resp_odata);
-        progress_bar.set_position(curr_pkg_idx as u64);
-    }
-
-    Ok(query_res)
-}
-
-fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
-    let mut packages = Vec::new();
-    let mut pkg_name = String::new();
-    let mut pkg_version = String::new();
-
-    let mut reader = Reader::from_str(odata_xml);
-    reader.trim_text(true);
-    let mut buf = Vec::new();
-
-    // entry/title -> id
-    // entry/m:properties/d:Version -> Version
-
-    enum ODataParserState {
-        LookingForEntry,
-        InEntry,
-        InEntryId,
-        InEntryVersion,
-    }
-
-    let mut state = ODataParserState::LookingForEntry;
-
-    loop {
-        match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(ref e)) => match e.name().as_ref() {
-                b"entry" => state = ODataParserState::InEntry,
-                b"title" => match state {
-                    ODataParserState::InEntry => {
-                        state = ODataParserState::InEntryId;
-                    }
-                    _ => {}
-                },
-                b"d:Version" => match state {
-                    ODataParserState::InEntry => {
-                        state = ODataParserState::InEntryVersion;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            },
-            Ok(Event::Text(e)) => match state {
-                ODataParserState::InEntryId => {
-                    pkg_name = String::from_utf8(e.to_vec()).unwrap();
-                }
-                ODataParserState::InEntryVersion => {
-                    pkg_version = String::from_utf8(e.to_vec()).unwrap()
-                }
-                _ => (),
-            },
-            Ok(Event::End(ref e)) => match e.name().as_ref() {
-                b"entry" => {
-                    println_verbose(&format!(
-                        "  package_from_odata: {}, version={}",
-                        pkg_name, pkg_version
-                    ));
-                    packages.push(Package {
-                        id: pkg_name.to_string(),
-                        version: pkg_version.to_string(),
-                        pinned: false,
-                    });
-                    state = ODataParserState::LookingForEntry;
-                }
-                b"title" => match state {
-                    ODataParserState::InEntryId => {
-                        state = ODataParserState::InEntry;
-                    }
-                    _ => {}
-                },
-                b"d:Version" => match state {
-                    ODataParserState::InEntryVersion => {
-                        state = ODataParserState::InEntry;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            },
-            Ok(Event::Eof) => break,
-            _ => (),
-        }
-        buf.clear();
-    }
-
-    packages
 }

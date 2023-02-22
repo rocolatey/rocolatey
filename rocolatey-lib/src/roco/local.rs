@@ -4,7 +4,7 @@ use quick_xml::Reader;
 use std::path::PathBuf;
 
 use crate::println_verbose;
-use crate::roco::{get_choco_sources, get_chocolatey_dir, NuspecTag, Package};
+use crate::roco::{get_choco_sources, get_chocolatey_dir, Feed, NuspecTag, Package};
 
 pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
     let mut pkgs: Vec<Package> = Vec::new();
@@ -179,4 +179,58 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
         version: pkg_version.to_string(),
         pinned: pinned_file.exists(),
     }
+}
+
+fn get_package_from_nupkg(filename: &str) -> Option<Package> {
+    // println!(" .. pkg from filename: {}", filename);
+    // TODO - is this sufficient? / do we need to extract the nuspec from the nupkg in order to get the id / version ?
+    let semver_regex = regex::Regex::new(r#"^(.+?)\.(((\d+\.?)+)(-.+)?)\.nupkg$"#).unwrap();
+    match semver_regex.captures(filename) {
+        Some(captures) => {
+            // println!("{:#?}", captures);
+            Some(Package {
+                id: captures
+                    .get(1)
+                    .map_or(String::from(""), |m| String::from(m.as_str())),
+                version: captures
+                    .get(2)
+                    .map_or(String::from(""), |m| String::from(m.as_str())),
+                pinned: false,
+            })
+        }
+        None => {
+            println!("ERROR: failed to get package from filename '{}'", filename);
+            None
+        }
+    }
+}
+
+pub fn get_nupkgs_from_path(
+    pkgs: &Vec<Package>,
+    feed: &Feed,
+    prerelease: bool,
+) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+    let mut feed_dir = PathBuf::from(&feed.url);
+    feed_dir.push("**/*.nupkg");
+
+    let mut packages: Vec<Package> = Vec::new();
+    for entry in glob::glob(&feed_dir.to_string_lossy())? {
+        match get_package_from_nupkg(entry?.file_name().unwrap().to_str().unwrap()) {
+            Some(p) => {
+                let version = semver::Version::parse(&p.version).unwrap();
+                if !prerelease && !version.pre.is_empty() {
+                    continue;
+                }
+                if pkgs
+                    .iter()
+                    .any(|s| s.id.to_lowercase() == p.id.to_lowercase())
+                {
+                    packages.push(p);
+                }
+            }
+            None => {}
+        }
+    }
+
+    Ok(packages)
 }
