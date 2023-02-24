@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use tokio;
 
 use crate::println_verbose;
-use crate::roco::{get_choco_sources,  Feed, FeedType, OutdatedInfo, Package};
-use crate::roco::{local, semver, nuget2, nuget3};
+use crate::roco::{get_choco_sources, Feed, FeedType, OutdatedInfo, Package};
+use crate::roco::{local, nuget2, nuget3, semver};
 
 impl Feed {
     pub async fn evaluate_feed_type(&mut self) {
@@ -22,15 +22,31 @@ impl Feed {
 
         // we have to determine if NuGet version of feed
         // -> setup reqwest, try to fetch index.json -> v3, else: v2
-        let request = build_reqwest(self);
-        let nuget_v3_index_url = format!("{}/index.json", &self.url);
-        let resp = request.get(nuget_v3_index_url).send().await;
-        // TODO: don't unwrap, propagate error!
-        let resp = resp.unwrap();
-        if resp.status().is_success() {
+        let service_index = match regex::Regex::new(r"\.json$").unwrap().is_match(&self.url) {
+            true => {
+                //looks like a v3 feed url
+                let request = build_reqwest(self);
+                let resp = request.get(&self.url).send().await;
+                let resp = resp.unwrap();
+                if resp.status().is_success() {
+                    let content = resp.text().await.unwrap();
+                    let v: Result<serde_json::Value, _> = serde_json::from_str(&content);
+                    if v.is_ok() {
+                        Some(v.unwrap())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            false => None,
+        };
+
+        if service_index.is_some() {
             println_verbose(&format!("feed {} looks like NuGet V3", self.name));
             self.feed_type = FeedType::NuGetV3;
-            self.service_resources = nuget3::read_service_index(resp.text().await.unwrap_or_default());
+            self.service_index = nuget3::read_service_index(service_index.unwrap());
         } else {
             println_verbose(&format!("feed {} is most likely NuGet V2", self.name));
             self.feed_type = FeedType::NuGetV2;

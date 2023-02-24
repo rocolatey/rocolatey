@@ -26,7 +26,7 @@ pub enum FeedType {
     NuGetV3,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Package {
     pub id: String,
     pub version: String,
@@ -59,7 +59,7 @@ pub struct Feed {
     pub admin_only: bool,
     pub priority: i64,
     pub feed_type: FeedType,
-    pub service_resources: Option<HashMap<String, String>>,
+    pub service_index: Option<nuget3::NuGetV3Index>,
 }
 
 #[derive(Debug, Clone)]
@@ -142,7 +142,7 @@ fn get_feed_from_source_attribs(
         proxy: None,
         disabled: disabled,
         feed_type: FeedType::Unknown,
-        service_resources: None,
+        service_index: None,
         certificate: match attrib_map.get("certificate") {
             Some(c) => Some(c.clone()),
             None => None,
