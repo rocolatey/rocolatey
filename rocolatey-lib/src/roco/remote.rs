@@ -99,10 +99,10 @@ async fn get_latest_remote_packages_on_feed(
             Ok(nupkg_files)
         }
         FeedType::NuGetV2 => {
-            let odata_xml = nuget2::get_odata_xml_packages(progress_bar, pkgs, feed, prerelease)
+            let packages = nuget2::get_remote_packages(progress_bar, pkgs, feed, prerelease)
                 .await
-                .expect("failed to receive odata for packages");
-            Ok(nuget2::get_packages_from_odata(&odata_xml))
+                .expect("failed to receive packages from NuGet v2 feed");
+            Ok(packages)
         }
         FeedType::NuGetV3 => {
             let packages = nuget3::get_remote_packages(progress_bar, pkgs, feed, prerelease)
@@ -287,4 +287,87 @@ pub async fn get_outdated_packages(
         }
     }
     res
+}
+
+pub(crate) async fn invoke_package_bulk_request(
+    progress_bar: &indicatif::ProgressBar,
+    pkgs: &[Package],
+
+    feed: &Feed,
+    query_string_base: &String,
+
+    max_batch_size: u32,
+    pkg_query_fmt: fn(pkg: &Package) -> String,
+    query_str_delim: &String,
+    query_str_end: &String,
+
+    batch_res_processor: fn(pkgs: &mut Vec<Package>, batch_res: &String),
+) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+    let mut pkgs_res: Vec<Package> = Vec::new();
+
+    let mut max_batch_size = max_batch_size;
+    let mut max_url_len = 2047;
+    let mut curr_pkg_idx = 0;
+    let total_pkgs = pkgs.len();
+
+    while curr_pkg_idx < total_pkgs {
+        // max_batch_size and max_url_len get reduced when communication with the repository fails
+        if max_batch_size == 0 || max_url_len < 100 {
+            Err("failed to execute bulk query, communication failed.")?
+        }
+
+        let mut query_string = format!("{}", query_string_base);
+        let mut batch_size = 0;
+        let last_query_package_idx = curr_pkg_idx;
+
+        loop {
+            let curr_pkg = pkgs.get(curr_pkg_idx).unwrap();
+
+            query_string.push_str(&pkg_query_fmt(curr_pkg));
+
+            curr_pkg_idx += 1;
+            batch_size += 1;
+
+            let url = reqwest::Url::parse(&query_string);
+            if (url.unwrap().as_str().len() > max_url_len)
+                || curr_pkg_idx == pkgs.len()
+                || batch_size >= max_batch_size
+            {
+                query_string.push_str(&query_str_end);
+                break;
+            }
+            query_string.push_str(&query_str_delim);
+        }
+
+        println_verbose(&format!(" -> GET: {}", query_string));
+        let client = build_reqwest(&feed);
+        let resp = client.get(&query_string).send().await?;
+
+        if !resp.status().is_success() {
+            println_verbose(&format!("  HTTP STATUS {}", resp.status().as_str()));
+        }
+
+        // if we get a client err response - try reducing url length (first)
+        if resp.status().is_client_error() {
+            max_url_len = max_url_len / 2;
+            println_verbose(&format!("  reduced max url length: {}", max_url_len));
+            curr_pkg_idx = last_query_package_idx;
+            continue;
+        }
+
+        let resp = resp.text().await.unwrap_or_default();
+
+        // if we still get an invalid response - try reducing the batch query size...
+        if resp.is_empty() {
+            max_batch_size -= 1;
+            println_verbose(&format!("  reduced receive batch size: {}", max_batch_size));
+            curr_pkg_idx = last_query_package_idx;
+            continue;
+        }
+
+        batch_res_processor(&mut pkgs_res, &resp);
+        progress_bar.set_position(curr_pkg_idx as u64);
+    }
+
+    Ok(pkgs_res)
 }

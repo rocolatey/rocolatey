@@ -2,7 +2,7 @@ use quick_xml::events::Event;
 use quick_xml::Reader;
 
 use crate::println_verbose;
-use crate::roco::remote::build_reqwest;
+use crate::roco::remote::{build_reqwest, invoke_package_bulk_request};
 use crate::roco::{Feed, Package};
 
 // https://joelverhagen.github.io/NuGetUndocs/
@@ -50,94 +50,47 @@ async fn receive_package_delta(
     (c as u32, query_res)
 }
 
-pub(crate) async fn get_odata_xml_packages(
+pub(crate) async fn get_remote_packages(
     progress_bar: &indicatif::ProgressBar,
-    pkgs: &Vec<Package>,
+    pkgs: &[Package],
     feed: &Feed,
     prerelease: bool,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let mut query_res = String::new();
+) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+
     let latest_filter = match prerelease {
         true => "IsAbsoluteLatestVersion",
         false => "IsLatestVersion",
     };
-    let query_string_base: String = format!("{}/Packages?$filter={}", feed.url, latest_filter);
+    let query_string_base: String = format!("{}/Packages?$filter={} and (", feed.url, latest_filter);
     let total_pkgs = pkgs.len();
-    let mut curr_pkg_idx = 0;
 
     // https://chocolatey.org/api/v2/Packages?$filter=IsLatestVersion and (Id eq 'Chocolatey' or Id eq 'Boxstarter' or Id eq 'vscode' or Id eq 'notepadplusplus')
 
-    let mut max_url_len = 2047;
-
     // NOTE: some feeds may have pagination (such as choco community repo)
     // determine number of packages returned by single request and use it as batch size for this repo from now on
-    let (mut max_batch_size, _) = if total_pkgs == 1 {
+    let (max_batch_size, _) = if total_pkgs == 1 {
         (1 as u32, "".to_string())
     } else {
         receive_package_delta(feed, 0, 0, prerelease).await
     };
 
-    while curr_pkg_idx < total_pkgs {
-        // max_batch_size and max_url_len get reduced when communication with the repository fails
-        if max_batch_size == 0 || max_url_len < 100 {
-            panic!("failed to read from repository '{}'", feed.name)
-        }
+    let query_str_delim = " or ".to_owned();
+    let query_str_end = ")".to_owned();
 
-        let mut query_string = format!("{} and (", query_string_base);
-        let mut batch_size = 0;
-        let last_query_package_idx = curr_pkg_idx;
-
-        loop {
-            let curr_pkg = pkgs.get(curr_pkg_idx).unwrap();
-            // query_string.push_str(&format!("(Id eq '{}' or Id eq '{}')", curr_pkg.id, curr_pkg.id.to_lowercase()));
-            query_string.push_str(&format!(
-                "(tolower(Id) eq '{}')",
-                curr_pkg.id.to_lowercase()
-            ));
-            curr_pkg_idx += 1;
-            batch_size += 1;
-
-            let url = reqwest::Url::parse(&query_string);
-            if (url.unwrap().as_str().len() > max_url_len)
-                || curr_pkg_idx == pkgs.len()
-                || batch_size >= max_batch_size
-            {
-                query_string.push_str(")");
-                break;
-            }
-            query_string.push_str(" or ");
-        }
-
-        println_verbose(&format!(" -> GET: {}", query_string));
-        let client = build_reqwest(&feed);
-        let resp_odata = client.get(&query_string).send().await?;
-
-        if !resp_odata.status().is_success() {
-            println_verbose(&format!("  HTTP STATUS {}", resp_odata.status().as_str()));
-        }
-
-        // if we get a client err response - try reducing url length (first)
-        if resp_odata.status().is_client_error() {
-            max_url_len = max_url_len / 2;
-            println_verbose(&format!("  reduced max url length: {}", max_url_len));
-            curr_pkg_idx = last_query_package_idx;
-            continue;
-        }
-
-        let resp_odata = resp_odata.text().await.unwrap_or_default();
-
-        // if we still get an invalid response - try reducing the batch query size...
-        if resp_odata.is_empty() {
-            max_batch_size -= 1;
-            println_verbose(&format!("  reduced receive batch size: {}", max_batch_size));
-            curr_pkg_idx = last_query_package_idx;
-            continue;
-        }
-        query_res.push_str(&resp_odata);
-        progress_bar.set_position(curr_pkg_idx as u64);
-    }
-
-    Ok(query_res)
+    invoke_package_bulk_request(
+        progress_bar,
+        pkgs,
+        feed,
+        &query_string_base,
+        max_batch_size,
+        |p| format!("(tolower(Id) eq '{}')", p.id.to_lowercase()),
+        &query_str_delim,
+        &query_str_end,
+        |pkgs, batch_str| -> () {
+            pkgs.extend(get_packages_from_odata(batch_str));
+        },
+    )
+    .await
 }
 
 pub(crate) fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
