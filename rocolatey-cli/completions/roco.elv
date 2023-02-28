@@ -45,8 +45,12 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;outdated'= {
-            cand --ignore-pinned 'ignore any pinned packages'
-            cand --ignore-unfound 'ignore any unfound packages'
+            cand --choco-mode 'enables ''ignore-pinned'' and ''ignore-unfound'' 
+(otherwise they are true by default, even if not set)'
+            cand --ignore-pinned 'ignore any pinned packages 
+(default, unless ''choco-mode'' is set)'
+            cand --ignore-unfound 'ignore any unfound packages 
+(default, unless ''choco-mode'' is set)'
             cand -p 'include prerelease versions'
             cand --pre 'include prerelease versions'
             cand -r 'limit the output to essential information'

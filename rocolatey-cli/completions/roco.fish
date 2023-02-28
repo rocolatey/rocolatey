@@ -11,8 +11,12 @@ complete -c roco -n "__fish_seen_subcommand_from list" -s h -l help -d 'Print he
 complete -c roco -n "__fish_seen_subcommand_from bad" -s r -l limitoutput -d 'limit the output to essential information'
 complete -c roco -n "__fish_seen_subcommand_from bad" -s v -l verbose -d 'be verbose'
 complete -c roco -n "__fish_seen_subcommand_from bad" -s h -l help -d 'Print help'
-complete -c roco -n "__fish_seen_subcommand_from outdated" -l ignore-pinned -d 'ignore any pinned packages'
-complete -c roco -n "__fish_seen_subcommand_from outdated" -l ignore-unfound -d 'ignore any unfound packages'
+complete -c roco -n "__fish_seen_subcommand_from outdated" -l choco-mode -d 'enables \'ignore-pinned\' and \'ignore-unfound\' 
+(otherwise they are true by default, even if not set)'
+complete -c roco -n "__fish_seen_subcommand_from outdated" -l ignore-pinned -d 'ignore any pinned packages 
+(default, unless \'choco-mode\' is set)'
+complete -c roco -n "__fish_seen_subcommand_from outdated" -l ignore-unfound -d 'ignore any unfound packages 
+(default, unless \'choco-mode\' is set)'
 complete -c roco -n "__fish_seen_subcommand_from outdated" -s p -l pre -d 'include prerelease versions'
 complete -c roco -n "__fish_seen_subcommand_from outdated" -s r -l limitoutput -d 'limit the output to essential information'
 complete -c roco -n "__fish_seen_subcommand_from outdated" -s v -l verbose -d 'be verbose'

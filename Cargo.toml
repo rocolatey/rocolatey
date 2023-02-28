@@ -4,5 +4,5 @@
 members = [
     "rocolatey-lib",
     "rocolatey-cli",
-    "rocolatey-server",
+   # "rocolatey-server",
 ]
