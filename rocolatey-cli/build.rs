@@ -21,8 +21,8 @@ fn main() {
 
   let path = generate_to::<PowerShell, _, _>(PowerShell, &mut app, appname, &outdir);
   println!("cargo:warning=> PowerShell completion file: {:?}", path);
-  
+
   let path = generate_to::<Elvish, _, _>(Elvish, &mut app, appname, &outdir);
   println!("cargo:warning=> Elvish completion file: {:?}", path);
-  
+
 }
