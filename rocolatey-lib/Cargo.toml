@@ -13,7 +13,7 @@ futures = "0.3.26"
 reqwest = "0.11.18"
 indicatif = "0.17.3"
 semver = "1.0.17"
-regex = "1.7.1"
+regex = "1.8.4"
 walkdir = "2.3.3"
 http-auth-basic = "0.3.3"
 tokio = { version = "1.28.2", features = ["full"] }
