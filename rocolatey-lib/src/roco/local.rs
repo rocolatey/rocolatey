@@ -271,8 +271,7 @@ mod tests {
 
     #[test]
     fn get_nupkgs_from_path_test() {
-        // let tests_root = std::env::var("RocolateyTestRoot").unwrap();
-        let tests_root = "/home/mw/git/rocolatey/test/";
+        let tests_root = std::env::var("RocolateyTestRoot").unwrap();
         let mut tests_repo = PathBuf::from(tests_root);
         tests_repo.push("fake_repo");
         let test_repo_str = tests_repo.into_os_string().into_string().unwrap();
