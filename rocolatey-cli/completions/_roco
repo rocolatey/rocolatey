@@ -56,12 +56,14 @@ _arguments "${_arguments_options[@]}" \
 (default, unless '\''choco-mode'\'' is set)]' \
 '--ignore-unfound[ignore any unfound packages 
 (default, unless '\''choco-mode'\'' is set)]' \
+'-l[output a whitespace-separated list of results]' \
 '-p[include prerelease versions]' \
 '--pre[include prerelease versions]' \
 '-r[limit the output to essential information]' \
 '--limitoutput[limit the output to essential information]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
+'--sslcheck[require https/ssl-validation]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '::pkg:' \

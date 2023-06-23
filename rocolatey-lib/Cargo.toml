@@ -1,6 +1,6 @@
 [package]
 name = "rocolatey-lib"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
 edition = "2018"
 
@@ -11,7 +11,6 @@ quick-xml = "0.29.0"
 glob = "0.3.1"
 futures = "0.3.28"
 reqwest = "0.11.18"
-indicatif = "0.17.5"
 semver = "1.0.17"
 regex = "1.8.4"
 walkdir = "2.3.3"

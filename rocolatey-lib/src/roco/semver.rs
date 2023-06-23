@@ -53,6 +53,12 @@ mod tests {
     use super::*;
 
     #[test]
+    fn my_semver_get_v_part_test() {
+        assert_eq!(my_semver_get_v_part("1"), 1);
+        assert_eq!(my_semver_get_v_part("2-something"), 2);
+    }
+
+    #[test]
     fn semver_is_newer_test() {
         assert_eq!(2 + 2, 4);
         assert!(is_newer("2.1.0", "1.0.0"));

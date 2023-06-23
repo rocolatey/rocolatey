@@ -1,26 +1,26 @@
 use warp::Filter;
 extern crate clap;
-use clap::{Command, Arg};
+use clap::{Arg, Command};
 
 use rocolatey_lib::roco::local::{get_local_bad_packages_text, get_local_packages_text};
 
 #[tokio::main]
 async fn main() {
     let matches = Command::new("Rocolatey Server")
-        .version("0.7.0")
+        .version("0.7.1")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides web access to rocolatey-lib")
         .arg(
             Arg::new("address")
                 .long("address")
                 .short('a')
-                .help("Sets the network address to bind to")
+                .help("Sets the network address to bind to"),
         )
         .arg(
             Arg::new("port")
                 .long("port")
                 .short('p')
-                .help("Sets the port to bind to")
+                .help("Sets the port to bind to"),
         )
         .get_matches();
 
@@ -34,11 +34,20 @@ async fn main() {
     println!(" server binds on ip: {}", bind_addr);
     println!(" server binds on port: {}", bind_port);
 
-    let warp_filter = warp::path!("rocolatey" / "local")
+    let api_base = warp::path!("rocolatey");
+
+    let warp_filter = api_base
+        .and(warp::path!("local"))
         .map(|| req_local(false))
-        .or(warp::path!("rocolatey" / "local" / "r").map(|| req_local(true)))
-        .or(warp::path!("rocolatey" / "bad").map(|| req_local_bad(false)))
-        .or(warp::path!("rocolatey" / "bad" / "r").map(|| req_local_bad(true)));
+        .or(api_base
+            .and(warp::path!("local" / "r"))
+            .map(|| req_local(true)))
+        .or(api_base
+            .and(warp::path!("bad"))
+            .map(|| req_local_bad(false)))
+        .or(api_base
+            .and(warp::path!("bad" / "r"))
+            .map(|| req_local_bad(true)));
     let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
     warp::serve(warp_filter).run((server_ip, bind_port)).await;
 }

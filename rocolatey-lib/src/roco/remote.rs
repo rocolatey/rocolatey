@@ -1,23 +1,22 @@
 use std::collections::HashMap;
 use tokio;
 
-use crate::println_verbose;
 use crate::roco::{get_choco_sources, Feed, FeedType, OutdatedInfo, Package};
 use crate::roco::{local, nuget2, nuget3, semver};
+use crate::{is_ssl_required, println_verbose};
 
 impl Feed {
-    pub async fn evaluate_feed_type(&mut self) {
+    pub async fn evaluate_feed_type(&mut self) -> Result<FeedType, Box<dyn std::error::Error>> {
         if self.feed_type != FeedType::Unknown {
             // already evaluated
-            return;
+            return Ok(self.feed_type);
         }
 
-        // TODO: actually not sure if this is safe enough
         let https_regex = regex::Regex::new(r"^https?://.+").unwrap();
         // if it's not a http(s)-like url, we default to type local/filesystem/unc
         if !https_regex.is_match(&self.url) {
             self.feed_type = FeedType::LocalFileSystem;
-            return;
+            return Ok(self.feed_type);
         }
 
         // we have to determine if NuGet version of feed
@@ -27,7 +26,10 @@ impl Feed {
                 //looks like a v3 feed url
                 let request = build_reqwest(self);
                 let resp = request.get(&self.url).send().await;
-                let resp = resp.unwrap();
+                let resp = match resp.is_ok() {
+                    true => resp.unwrap(),
+                    false => return Err(resp.err().unwrap().to_string())?,
+                };
                 if resp.status().is_success() {
                     let content = resp.text().await.unwrap();
                     let v: Result<serde_json::Value, _> = serde_json::from_str(&content);
@@ -51,21 +53,22 @@ impl Feed {
             println_verbose(&format!("feed {} is most likely NuGet V2", self.name));
             self.feed_type = FeedType::NuGetV2;
         }
+        Ok(self.feed_type)
     }
 }
 
 // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
 
 pub(crate) fn build_reqwest(feed: &Feed) -> reqwest::Client {
-    let mut rbuilder = reqwest::Client::builder();
+    let mut builder: reqwest::ClientBuilder = reqwest::Client::builder();
     if feed.proxy.is_some() {
-        let proxy = feed.proxy.as_ref().unwrap();
-        let mut rproxy = reqwest::Proxy::all(&proxy.url).unwrap();
-        if proxy.credential.is_some() {
-            let credential = proxy.credential.as_ref().unwrap();
-            rproxy = rproxy.basic_auth(&credential.user, &credential.pass);
+        let proxy_settings = feed.proxy.as_ref().unwrap();
+        let mut proxy = reqwest::Proxy::all(&proxy_settings.url).unwrap();
+        if proxy_settings.credential.is_some() {
+            let credential = proxy_settings.credential.as_ref().unwrap();
+            proxy = proxy.basic_auth(&credential.user, &credential.pass);
         }
-        rbuilder = rbuilder.proxy(rproxy);
+        builder = builder.proxy(proxy);
     }
     let mut headers = reqwest::header::HeaderMap::new();
 
@@ -78,86 +81,85 @@ pub(crate) fn build_reqwest(feed: &Feed) -> reqwest::Client {
         );
     }
     static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
-    rbuilder
+    builder
         .user_agent(APP_USER_AGENT)
         .default_headers(headers)
+        .danger_accept_invalid_certs(!is_ssl_required())
         .build()
         .unwrap()
 }
 
 async fn get_latest_remote_packages_on_feed(
-    progress_bar: &indicatif::ProgressBar,
     pkgs: &Vec<Package>,
     feed: &Feed,
     prerelease: bool,
 ) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
-    progress_bar.set_message(format!("receive packages from '{}'", feed.name));
-    match &feed.feed_type {
+    let res = match &feed.feed_type {
         FeedType::LocalFileSystem => {
-            let nupkg_files = local::get_nupkgs_from_path(pkgs, feed, prerelease)
-                .expect("failed to read package info from file system");
-            Ok(nupkg_files)
+            let nupkg_files = local::get_nupkgs_from_path(pkgs, feed, prerelease);
+            match nupkg_files.is_ok() {
+                true => Ok(nupkg_files.unwrap()),
+                false => Err("failed to read package info from file system")?,
+            }
         }
         FeedType::NuGetV2 => {
-            let packages = nuget2::get_remote_packages(progress_bar, pkgs, feed, prerelease)
-                .await
-                .expect("failed to receive packages from NuGet v2 feed");
-            Ok(packages)
+            let packages = nuget2::get_remote_packages(pkgs, feed, prerelease).await;
+            match packages.is_ok() {
+                true => Ok(packages.unwrap()),
+                false => Err("failed to receive packages from NuGet v2 feed")?,
+            }
         }
         FeedType::NuGetV3 => {
-            let packages = nuget3::get_remote_packages(progress_bar, pkgs, feed, prerelease)
-                .await
-                .expect("failed to receive packages from NuGet v3 feed");
-            Ok(packages)
+            let packages = nuget3::get_remote_packages(pkgs, feed, prerelease).await;
+            match packages.is_ok() {
+                true => Ok(packages.unwrap()),
+                false => Err("failed to receive packages from NuGet v3 feed")?,
+            }
         }
         FeedType::Unknown => Err("cannot communicate with unknown feed type")?,
-    }
+    };
+    res
 }
 
 async fn get_latest_remote_packages(
-    progress_bar: &indicatif::ProgressBar,
     pkgs: &Vec<Package>,
     feeds: &Vec<Feed>,
     prerelease: bool,
 ) -> Result<HashMap<String, Package>, Box<dyn std::error::Error>> {
     let mut remote_pkgs: HashMap<String, Package> = HashMap::new();
-    //progress_bar.println("receiving package info from remote feeds...");
 
+    // process feeds in parallel
+    let mut tasks = vec![];
+    let feeds = feeds.clone();
     for f in feeds {
-        let pkgs = get_latest_remote_packages_on_feed(progress_bar, pkgs, f, prerelease)
-            .await
-            .expect("failed to get remote packages");
-        // println!("{:#?}", pkgs);
+        let pkgs = pkgs.clone(); // need to clone because of the capture
+        tasks.push(tokio::spawn(async move {
+            let pkgs = get_latest_remote_packages_on_feed(&pkgs, &f, prerelease)
+                .await
+                .expect("failed to get remote packages");
+            pkgs
+        }));
+    }
+    for t in tasks {
+        let pkgs = t.await.unwrap();
         for p in pkgs {
             let lowercase_id = p.id.to_lowercase();
             if remote_pkgs.contains_key(&lowercase_id) {
                 let remote_version = &remote_pkgs.get(&lowercase_id).unwrap().version;
-                println_verbose(&format!(
-                    "  pkg {} also exists on remote {}, version={}",
-                    lowercase_id, f.name, p.version
-                ));
                 if !semver::is_newer(&p.version, remote_version) {
-                    println_verbose(&format!(
-                        "  skip: already know newer version {}",
-                        remote_version
-                    ));
                     continue;
                 }
             }
-            println_verbose(&format!(
-                "  using {}, version={} for outdated check",
-                lowercase_id, p.version
-            ));
             remote_pkgs.insert(lowercase_id, p);
         }
     }
-
     Ok(remote_pkgs)
 }
 
 pub async fn get_outdated_packages(
     pkg: &str,
-    limitoutput: bool,
+    limit_output: bool,
+    list_output: bool,
     prerelease: bool,
     ignore_pinned: bool,
     ignore_unfound: bool,
@@ -176,12 +178,23 @@ pub async fn get_outdated_packages(
         .filter(|f| f.disabled == false)
         .collect();
 
+    println_verbose(&format!(
+        "ssl checks are {}",
+        if is_ssl_required() {
+            "required"
+        } else {
+            "disabled"
+        }
+    ));
+
     // call feed.evaluate_feed_type() on each feed in remote_feeds (await!)
     let tasks: Vec<_> = remote_feeds
         .into_iter()
         .map(|mut feed| {
             tokio::spawn(async {
-                feed.evaluate_feed_type().await;
+                // TODO: implement error handling
+                // -> feed may not be reachable / get it out of the way asap.
+                _ = feed.evaluate_feed_type().await;
                 feed
             })
         })
@@ -193,27 +206,13 @@ pub async fn get_outdated_packages(
     }
     let remote_feeds = feeds;
 
-    let progress_bar = match limitoutput {
-        true => indicatif::ProgressBar::hidden(),
-        false => indicatif::ProgressBar::new(local_packages.len() as u64),
-    };
-    progress_bar.set_style(
-        indicatif::ProgressStyle::with_template(
-            "[{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {msg}",
-        )
-        .unwrap()
-        .progress_chars("=>-"),
-    );
-    progress_bar.enable_steady_tick(std::time::Duration::from_millis(500));
-    let latest_packages =
-        get_latest_remote_packages(&progress_bar, &local_packages, &remote_feeds, prerelease)
-            .await
-            .expect("failed to get remote package list");
-
-    progress_bar.finish_with_message("received remote package information");
+    let latest_packages = get_latest_remote_packages(&local_packages, &remote_feeds, prerelease)
+        .await
+        .expect("failed to get remote package list");
 
     let mut oi: Vec<OutdatedInfo> = Vec::new();
     let mut warning_count = 0;
+
     for l in local_packages {
         if ignore_pinned && l.pinned {
             continue;
@@ -256,9 +255,13 @@ pub async fn get_outdated_packages(
     let mut warnings = String::new();
     let mut res = String::new();
 
-    if !limitoutput {
+    if !limit_output {
         res.push_str("Outdated Packages\n");
-        res.push_str(" Output is package name | current version | available version | pinned?\n\n");
+        if !list_output {
+            res.push_str(
+                " Output is package name | current version | available version | pinned?\n\n",
+            );
+        }
     }
 
     let mut outdated_packages = 0;
@@ -266,16 +269,20 @@ pub async fn get_outdated_packages(
         if o.outdated {
             outdated_packages += 1;
         }
-        res.push_str(&format!(
-            "{}|{}|{}|{}\n",
-            o.id, o.local_version, o.remote_version, o.pinned
-        ));
+        if list_output {
+            res.push_str(&format!("{} ", o.id));
+        } else {
+            res.push_str(&format!(
+                "{}|{}|{}|{}\n",
+                o.id, o.local_version, o.remote_version, o.pinned
+            ));
+        }
         if !o.exists_on_remote {
             warnings.push_str(&format!(" - {}\n", o.id));
         }
     }
 
-    if !limitoutput {
+    if !limit_output {
         res.push_str(&format!(
             "\nRocolatey has determined {} package(s) are outdated.\n",
             outdated_packages
@@ -290,7 +297,6 @@ pub async fn get_outdated_packages(
 }
 
 pub(crate) async fn invoke_package_bulk_request(
-    progress_bar: &indicatif::ProgressBar,
     pkgs: &[Package],
 
     feed: &Feed,
@@ -366,7 +372,6 @@ pub(crate) async fn invoke_package_bulk_request(
         }
 
         batch_res_processor(&mut pkgs_res, &resp);
-        progress_bar.set_position(curr_pkg_idx as u64);
     }
 
     Ok(pkgs_res)

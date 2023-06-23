@@ -51,12 +51,14 @@ set edit:completion:arg-completer[roco] = {|@words|
 (default, unless ''choco-mode'' is set)'
             cand --ignore-unfound 'ignore any unfound packages 
 (default, unless ''choco-mode'' is set)'
+            cand -l 'output a whitespace-separated list of results'
             cand -p 'include prerelease versions'
             cand --pre 'include prerelease versions'
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
+            cand --sslcheck 'require https/ssl-validation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
