@@ -2,5 +2,5 @@
 b = "build"
 
 [env]
-ChocolateyInstall = { value = "test/fake_choco_home", relative = true }
-RocolateyTestRoot = { value = "test", relative = true }
+ChocolateyInstall = { value = "test/fake_choco_home", relative = true, force = true }
+RocolateyTestRoot = { value = "test", relative = true, force = true }
