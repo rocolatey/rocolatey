@@ -171,6 +171,9 @@ pub async fn get_outdated_packages(
             .into_iter()
             .filter(|p| p.id() == pkg)
             .collect();
+        if local_packages.len() == 0 {
+            panic!("package '{}' not present in local packages.", pkg);
+        }
     }
     let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
     let remote_feeds: Vec<Feed> = remote_feeds
