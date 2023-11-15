@@ -51,7 +51,6 @@ fn get_resource<'f>(feed: &'f Feed, resource_type: &str) -> Option<Vec<&'f NuGet
 // https://learn.microsoft.com/en-us/nuget/api/overview
 
 pub(crate) async fn get_remote_packages(
-    progress_bar: &indicatif::ProgressBar,
     pkgs: &[Package],
     feed: &Feed,
     prerelease: bool,
@@ -61,7 +60,6 @@ pub(crate) async fn get_remote_packages(
     // https://azuresearch-usnc.nuget.org/query?q=packageid:chocolatey&prerelease=true
     // https://azuresearch-usnc.nuget.org/query?q=packageid:chocolatey%20packageid:chocolatey.lib&prerelease=true
 
-    //progress_bar.set_position(curr_pkg_idx as u64);
     let search_query_service: Option<Vec<&NuGetResource>> =
         get_resource(feed, "SearchQueryService");
 
@@ -85,7 +83,6 @@ pub(crate) async fn get_remote_packages(
     let query_str_end = "".to_owned();
 
     invoke_package_bulk_request(
-        progress_bar,
         pkgs,
         feed,
         &query_string_base,

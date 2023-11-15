@@ -1,22 +1,21 @@
 [package]
 name = "rocolatey-lib"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-quick-xml = "0.27.1"
+quick-xml = "0.30.0"
 glob = "0.3.1"
-futures = "0.3.26"
-reqwest = "0.11.14"
-indicatif = "0.17.3"
-semver = "1.0.16"
-regex = "1.7.1"
-walkdir = "2.3.2"
+futures = "0.3.28"
+reqwest = "0.11.18"
+semver = "1.0.18"
+regex = "1.8.4"
+walkdir = "2.3.3"
 http-auth-basic = "0.3.3"
-tokio = { version = "1.25.0", features = ["full"] }
-serde_json = "1.0.66"
-serde_with = "1.10.0"
-serde = "1.0.126"
+tokio = { version = "1.28.2", features = ["full"] }
+serde_json = "1.0.105"
+serde_with = "3.0.0"
+serde = "1.0.164"

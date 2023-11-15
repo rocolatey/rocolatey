@@ -17,9 +17,13 @@ pub fn build_cli() -> Command {
         .long("pre")
         .action(ArgAction::SetTrue)
         .help("include prerelease versions");
+    let common_arg_enable_cert_validation: Arg = Arg::new("ssl-validation-enabled")
+        .long("sslcheck")
+        .action(ArgAction::SetTrue)
+        .help("require https/ssl-validation");
 
     Command::new("Rocolatey")
-    .version("0.7.0")
+    .version("0.8.0")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
@@ -59,9 +63,16 @@ pub fn build_cli() -> Command {
             .action(ArgAction::SetTrue)
             .help("ignore any unfound packages \n(default, unless 'choco-mode' is set)"),
         )
+        .arg(
+          Arg::new("listoutput")
+            .short('l')
+            .action(ArgAction::SetTrue)
+            .help("output a whitespace-separated list of results"),
+        )
         .arg(&common_arg_prerelease)
         .arg(&common_arg_limitoutput)
-        .arg(&common_arg_verbose),
+        .arg(&common_arg_verbose)
+        .arg(&common_arg_enable_cert_validation),
     )
     .subcommand(
       Command::new("source")

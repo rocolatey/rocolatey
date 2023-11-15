@@ -25,7 +25,7 @@ pub enum FeedType {
     NuGetV3,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Package {
     pub id: String,
     pub version: String,
@@ -81,14 +81,6 @@ pub struct OutdatedInfo {
     pub pinned: bool,
     pub outdated: bool,
     pub exists_on_remote: bool,
-}
-
-pub fn get_chocolatey_dir() -> Result<String, std::env::VarError> {
-    let key = "ChocolateyInstall";
-    match std::env::var(key) {
-        Ok(val) => Ok(String::from(val)),
-        Err(e) => Err(e),
-    }
 }
 
 fn xml_attribs_to_map(
@@ -173,6 +165,14 @@ fn get_config_settings_from_attribs(
     let val = attrib_map.get("value");
     if val.is_some() {
         config_settings.insert(attrib_map.get("key").unwrap().clone(), val.unwrap().clone());
+    }
+}
+
+fn get_chocolatey_dir() -> Result<String, std::env::VarError> {
+    let key = "ChocolateyInstall";
+    match std::env::var(key) {
+        Ok(val) => Ok(String::from(val)),
+        Err(e) => Err(e),
     }
 }
 
@@ -277,4 +277,41 @@ fn decrypt_choco_config_string(encrypted: &str) -> String {
     let decrypted = String::from_utf8_lossy(&chdec.stdout);
     let res = decrypted.trim(); // remove newlines
     res.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    //NOTE: ChocolateyInstall, RocolateyTestRoot env-vars needs to be set in via Cargo [env]
+
+    #[test]
+    fn get_chocolatey_dir_test() {
+        // env:ChocolateyInstall will be set by cargo [env]
+        assert!(get_chocolatey_dir().is_ok());
+    }
+
+    #[tokio::test]
+    async fn get_choco_sources_test() {
+        let sources = get_choco_sources();
+        assert!(sources.is_ok());
+        let sources = sources.unwrap();
+        sources.iter().cloned().for_each(|s| {
+            assert!(!s.name.is_empty());
+            assert!(!s.url.is_empty());
+        });
+
+        let choco_source: &Feed = sources.iter().find(|s| s.name == "chocolatey").unwrap();
+
+        assert_eq!(choco_source.name, "chocolatey");
+        assert_eq!(choco_source.url, "https://chocolatey.org/api/v2");
+        assert_eq!(choco_source.priority, 101);
+        assert_eq!(choco_source.admin_only, false);
+        assert_eq!(choco_source.bypass_proxy, false);
+        assert_eq!(choco_source.certificate, None);
+        assert!(choco_source.credential.is_none());
+        // the FeedType is only evaluated when needed/actually used
+        assert_eq!(choco_source.feed_type, FeedType::Unknown);
+        // TODO: verify choco_source.evaluate_feed_type works correctly
+    }
 }

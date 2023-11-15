@@ -51,7 +51,6 @@ async fn receive_package_delta(
 }
 
 pub(crate) async fn get_remote_packages(
-    progress_bar: &indicatif::ProgressBar,
     pkgs: &[Package],
     feed: &Feed,
     prerelease: bool,
@@ -78,7 +77,6 @@ pub(crate) async fn get_remote_packages(
     let query_str_end = ")".to_owned();
 
     invoke_package_bulk_request(
-        progress_bar,
         pkgs,
         feed,
         &query_string_base,

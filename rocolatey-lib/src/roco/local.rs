@@ -153,6 +153,7 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
                 _ => tag = NuspecTag::Null,
             },
             Ok(Event::Text(e)) => match tag {
+                // always ensure package ids are lowercase
                 NuspecTag::Id => pkg_name = String::from_utf8(e.to_vec()).unwrap(),
                 NuspecTag::Version => pkg_version = String::from_utf8(e.to_vec()).unwrap(),
                 _ => (),
@@ -213,12 +214,16 @@ pub fn get_nupkgs_from_path(
     let mut feed_dir = PathBuf::from(&feed.url);
     feed_dir.push("**/*.nupkg");
 
+    let prerelease_regex = regex::Regex::new(r#"^(\d+\.?){1,4}\-.+"#).unwrap();
+
     let mut packages: Vec<Package> = Vec::new();
     for entry in glob::glob(&feed_dir.to_string_lossy())? {
         match get_package_from_nupkg(entry?.file_name().unwrap().to_str().unwrap()) {
             Some(p) => {
-                let version = semver::Version::parse(&p.version).unwrap();
-                if !prerelease && !version.pre.is_empty() {
+                // only need to check if a version has a prerelease part,
+                // no need to validate / parse the whole thing at this point!
+                let version_is_prerelease = prerelease_regex.is_match(&p.version);
+                if !prerelease && version_is_prerelease {
                     continue;
                 }
                 if pkgs
@@ -233,4 +238,74 @@ pub fn get_nupkgs_from_path(
     }
 
     Ok(packages)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    //NOTE: ChocolateyInstall, RocolateyTestRoot env-vars needs to be set in via Cargo [env]
+
+    #[test]
+    fn get_package_from_nupkg_test() {
+        let pkg = get_package_from_nupkg("googlechrome.80.0.3987.149.nupkg").unwrap();
+        assert_eq!(pkg.id, "googlechrome");
+        assert_eq!(pkg.version, "80.0.3987.149");
+        assert_eq!(pkg.pinned, false);
+    }
+
+    #[test]
+    fn get_package_from_nuspec_test() {
+        // TODO: look up if package ids are case-sensitive or not
+        // NOTE: would need to normalize across local/v2/v3 sources
+        // iirc ProGet does 'support' case-sensitive package IDs
+        let mut pkg_path = PathBuf::from(
+            get_chocolatey_dir().expect("env:ChocolateyInstall must be set during tests!"),
+        );
+        pkg_path.push("lib");
+        pkg_path.push("Chocolatey/Chocolatey.nuspec");
+
+        let pkg = get_package_from_nuspec(&pkg_path);
+        assert_eq!(pkg.id, "Chocolatey");
+        assert_eq!(pkg.version, "2.0");
+    }
+
+    #[test]
+    fn get_nupkgs_from_path_test() {
+        let tests_root = std::env::var("RocolateyTestRoot").unwrap();
+        let mut tests_repo = PathBuf::from(tests_root);
+        tests_repo.push("fake_repo");
+        let test_repo_str = tests_repo.into_os_string().into_string().unwrap();
+
+        let tests_feed = Feed {
+            name: "fake_repo".to_string(),
+            url: String::from(test_repo_str.clone()),
+            admin_only: false,
+            bypass_proxy: false,
+            credential: None,
+            proxy: None,
+            disabled: false,
+            certificate: None,
+            self_service: false,
+            priority: 0,
+            feed_type: crate::roco::FeedType::LocalFileSystem,
+            service_index: None,
+        };
+
+        let pkgs = vec![Package {
+            id: "Firefox".to_string(),
+            version: "81.0.0.0".to_string(),
+            pinned: false,
+        }];
+        let pkgs = get_nupkgs_from_path(&pkgs, &tests_feed, false).unwrap();
+
+        let test_files = glob::glob(&format!("{}/*", test_repo_str)).unwrap();
+        assert!(test_files.count() >= 2);
+        // although there are additional packages in the feed,
+        // we only get the the ones we asked for
+        assert!(pkgs.len() == 1);
+
+        // prerelease-package are only picked up when explicitly required
+        let pkgs = get_nupkgs_from_path(&pkgs, &tests_feed, true).unwrap();
+        assert!(pkgs.len() == 2);
+    }
 }
