@@ -11,10 +11,11 @@ fn my_semver_is_newer(a: &str, b: &str) -> bool {
     let b_parts: Vec<&str> = b.split(".").collect();
 
     for (i, v_a) in a_parts.iter().enumerate() {
-        if b_parts.len() <= i {
-            return true;
-        }
-        let v_b = b_parts.get(i).unwrap();
+        let v_b = if b_parts.len() <= i {
+            "0"
+        } else {
+             b_parts.get(i).unwrap()
+        };
         let n_a = v_a.parse::<i32>();
         let n_b = v_b.parse::<i32>();
         if n_a.is_ok() && n_b.is_err() {
@@ -77,5 +78,7 @@ mod tests {
         assert!(!is_newer("1.2.3", "1.2.3.1"));
         assert!(!is_newer("1.1.0-alpha", "1.1.0"));
         assert!(is_newer("1.1.0", "1.1.0-alpha"));
+        assert!(!is_newer("1.1.0", "1.1"));
+        assert!(!is_newer("1.1", "1.1.0"));
     }
 }
