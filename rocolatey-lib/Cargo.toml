@@ -15,7 +15,7 @@ semver = "1.0.18"
 regex = "1.8.4"
 walkdir = "2.3.3"
 http-auth-basic = "0.3.3"
-tokio = { version = "1.28.2", features = ["full"] }
+tokio = { version = "1.34.0", features = ["full"] }
 serde_json = "1.0.105"
 serde_with = "3.0.0"
 serde = "1.0.164"
