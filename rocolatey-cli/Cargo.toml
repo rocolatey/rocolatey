@@ -13,5 +13,5 @@ clap = "4.1.1"
 
 [build-dependencies]
 clap = "4.1.1"
-clap_complete = "4.1.1"
+clap_complete = "4.4.4"
 
