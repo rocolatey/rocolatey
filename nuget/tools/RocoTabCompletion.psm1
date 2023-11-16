@@ -51,14 +51,20 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;outdated' {
-            [CompletionResult]::new('--ignore-pinned', 'ignore-pinned', [CompletionResultType]::ParameterName, 'ignore any pinned packages')
-            [CompletionResult]::new('--ignore-unfound', 'ignore-unfound', [CompletionResultType]::ParameterName, 'ignore any unfound packages')
+            [CompletionResult]::new('--choco-mode', 'choco-mode', [CompletionResultType]::ParameterName, 'enables ''ignore-pinned'' and ''ignore-unfound'' 
+(otherwise they are true by default, even if not set)')
+            [CompletionResult]::new('--ignore-pinned', 'ignore-pinned', [CompletionResultType]::ParameterName, 'ignore any pinned packages 
+(default, unless ''choco-mode'' is set)')
+            [CompletionResult]::new('--ignore-unfound', 'ignore-unfound', [CompletionResultType]::ParameterName, 'ignore any unfound packages 
+(default, unless ''choco-mode'' is set)')
+            [CompletionResult]::new('-l', 'l', [CompletionResultType]::ParameterName, 'output a whitespace-separated list of results')
             [CompletionResult]::new('-p', 'p', [CompletionResultType]::ParameterName, 'include prerelease versions')
             [CompletionResult]::new('--pre', 'pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
             [CompletionResult]::new('-r', 'r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
             [CompletionResult]::new('--limitoutput', 'limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
             [CompletionResult]::new('-v', 'v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', 'verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--sslcheck', 'sslcheck', [CompletionResultType]::ParameterName, 'require https/ssl-validation')
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
             break
