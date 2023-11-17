@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-quick-xml = "0.30.0"
+quick-xml = "0.31.0"
 glob = "0.3.1"
 futures = "0.3.29"
 reqwest = "0.11.22"
