@@ -26,7 +26,9 @@ pub fn get_local_bad_packages() -> Result<Vec<Package>, Box<dyn std::error::Erro
     let choco_dir = get_chocolatey_dir().unwrap_or_else(|_| String::from("."));
     let mut pkg_dir = PathBuf::from(choco_dir);
     pkg_dir.push("lib-bad");
-    pkg_dir.push("*/*.nuspec");
+    // NOTE: using a '**' glob may be a bad idea
+    // (recursive search may be slow + what if someone includes nuspec in a package?)
+    pkg_dir.push("**/*.nuspec");
     for entry in glob::glob(&pkg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => pkgs.push(get_package_from_nuspec(&path)),
