@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build on ${{ matrix.os }}
       run: cargo build --verbose
     - name: Run tests on ${{ matrix.os }}
@@ -32,7 +32,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
@@ -50,7 +50,7 @@ jobs:
         target: [ i686-pc-windows-msvc, x86_64-pc-windows-msvc ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
@@ -65,7 +65,7 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
       - name: Upload Release Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with: 
           name: ${{ matrix.target }}-stable-artifacts
           path: ${{ github.workspace }}\target\${{ matrix.target }}\release\*.exe

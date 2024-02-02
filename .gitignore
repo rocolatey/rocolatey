@@ -2,7 +2,8 @@
 /target
 **/*.rs.bk
 *.nupkg
+*.zip
 nuget/tools/*.exe
 nuget/tools/LICENSE.txt
-*.zip
 choco-local_dl.xml
+rocolatey-harbor
