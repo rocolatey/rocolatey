@@ -36,10 +36,10 @@ Normally you should not run multiple Chocolatey instances at the same time, howe
 It very much depends on the number of installed packages and configured feeds, generally speaking roco should always be much faster than choco, the difference becomes bigger when dealing with many packages and feeds.
 
     </description>
-    <copyright>Copyright (c) 2020-2023 Manfred Wallner</copyright>
-    <projectUrl>https://github.com/mwallner/rocolatey</projectUrl>
-    <licenseUrl>https://raw.githubusercontent.com/mwallner/rocolatey/master/LICENSE.txt</licenseUrl>
-    <iconUrl>https://cdn.jsdelivr.net/gh/mwallner/rocolatey/roco.png</iconUrl>
+    <copyright>Copyright (c) 2020-2024 Manfred Wallner</copyright>
+    <projectUrl>https://github.com/rocolatey/rocolatey</projectUrl>
+    <licenseUrl>https://raw.githubusercontent.com/rocolatey/rocolatey/master/LICENSE.txt</licenseUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/rocolatey/rocolatey/roco.png</iconUrl>
     <language>en-US</language>
     <tags>chocolatey local tool roco</tags>
     <dependencies>
