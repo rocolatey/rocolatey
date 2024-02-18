@@ -99,30 +99,43 @@ async fn get_latest_remote_packages_on_feed(
             let nupkg_files = local::get_nupkgs_from_path(pkgs, feed, prerelease);
             match nupkg_files.is_ok() {
                 true => Ok(nupkg_files.unwrap()),
-                false => Err("failed to read package info from file system")?,
+                false => Err(format!(
+                    "failed to read package info from file system '{}'",
+                    feed.url
+                ))?,
             }
         }
         FeedType::NuGetV2 => {
             let packages = nuget2::get_remote_packages(pkgs, feed, prerelease).await;
             match packages.is_ok() {
                 true => Ok(packages.unwrap()),
-                false => Err("failed to receive packages from NuGet v2 feed")?,
+                false => Err(format!(
+                    "failed to receive packages from NuGet v2 feed '{}'",
+                    feed.url
+                ))?,
             }
         }
         FeedType::NuGetV3 => {
             let packages = nuget3::get_remote_packages(pkgs, feed, prerelease).await;
             match packages.is_ok() {
                 true => Ok(packages.unwrap()),
-                false => Err("failed to receive packages from NuGet v3 feed")?,
+                false => Err(format!(
+                    "failed to receive packages from NuGet v3 feed '{}'",
+                    feed.url
+                ))?,
             }
         }
-        FeedType::Unknown => Err("cannot communicate with unknown feed type")?,
+        FeedType::Unknown => Err(format!(
+            "cannot communicate with unknown feed type, please check feed '{}'",
+            feed.name
+        ))?,
     };
     res
 }
 
 async fn get_latest_remote_packages(
     pkgs: &Vec<Package>,
+    limit_output: bool,
     feeds: &Vec<Feed>,
     prerelease: bool,
 ) -> Result<HashMap<String, Package>, Box<dyn std::error::Error>> {
@@ -136,7 +149,12 @@ async fn get_latest_remote_packages(
         tasks.push(tokio::spawn(async move {
             let pkgs = get_latest_remote_packages_on_feed(&pkgs, &f, prerelease)
                 .await
-                .expect("failed to get remote packages");
+                .unwrap_or_else(|e| {
+                    if !limit_output {
+                        eprintln!("failed to fetch packages: {}", e)
+                    }
+                    vec![]
+                });
             pkgs
         }));
     }
@@ -209,9 +227,10 @@ pub async fn get_outdated_packages(
     }
     let remote_feeds = feeds;
 
-    let latest_packages = get_latest_remote_packages(&local_packages, &remote_feeds, prerelease)
-        .await
-        .expect("failed to get remote package list");
+    let latest_packages =
+        get_latest_remote_packages(&local_packages, limit_output, &remote_feeds, prerelease)
+            .await
+            .expect("failed to get remote package list");
 
     let mut oi: Vec<OutdatedInfo> = Vec::new();
     let mut warning_count = 0;
