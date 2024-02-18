@@ -172,7 +172,10 @@ fn get_chocolatey_dir() -> Result<String, std::env::VarError> {
     let key = "ChocolateyInstall";
     match std::env::var(key) {
         Ok(val) => Ok(String::from(val)),
-        Err(e) => Err(e),
+        Err(e) => {
+            eprintln!("failed to get choco dir 'ChocolateyInstall': {}", e);
+            ::std::process::exit(1)
+        }
     }
 }
 
