@@ -4,7 +4,7 @@
   <metadata>
     <id>rocolatey</id>
     <title>ROCO(latey)</title>
-    <version>0.8.1</version>
+    <version>0.8.2</version>
     <authors>Manfred Wallner</authors>
     <owners>Manfred Wallner</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -39,7 +39,7 @@ It very much depends on the number of installed packages and configured feeds, g
     <copyright>Copyright (c) 2020-2024 Manfred Wallner</copyright>
     <projectUrl>https://github.com/rocolatey/rocolatey</projectUrl>
     <licenseUrl>https://raw.githubusercontent.com/rocolatey/rocolatey/master/LICENSE.txt</licenseUrl>
-    <iconUrl>https://cdn.jsdelivr.net/gh/rocolatey/rocolatey/roco.png</iconUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/rocolatey/rocolatey/roco_sq.png</iconUrl>
     <language>en-US</language>
     <tags>chocolatey local tool roco</tags>
     <dependencies>

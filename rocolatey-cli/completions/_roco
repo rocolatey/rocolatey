@@ -188,4 +188,8 @@ _roco__source_commands() {
     _describe -t commands 'roco source commands' commands "$@"
 }
 
-_roco "$@"
+if [ "$funcstack[1]" = "_roco" ]; then
+    _roco "$@"
+else
+    compdef _roco roco
+fi

@@ -4,7 +4,7 @@ mod cli;
 use rocolatey_lib::roco::local::{
     get_local_bad_packages_text, get_local_packages_text, get_sources_text,
 };
-use rocolatey_lib::roco::remote::{get_outdated_packages};
+use rocolatey_lib::roco::remote::get_outdated_packages;
 
 #[tokio::main]
 async fn main() {
@@ -30,7 +30,7 @@ async fn main() {
             let choco_compat = matches.get_flag("choco-compat");
             let ignore_pinned = !choco_compat || matches.get_flag("ignore-pinned");
             let ignore_unfound = !choco_compat || matches.get_flag("ignore-unfound");
-            let pkg  = matches.get_one::<String>("pkg").unwrap();
+            let pkg = matches.get_one::<String>("pkg").unwrap();
             print!(
                 "{}",
                 get_outdated_packages(pkg, r, l, pre, ignore_pinned, ignore_unfound).await
