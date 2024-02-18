@@ -23,7 +23,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
         'roco' {
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('-V', 'V', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('-V', 'V ', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list local installed packages')
             [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'list packages in lib-bad/')
