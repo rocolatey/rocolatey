@@ -373,6 +373,10 @@ pub(crate) async fn invoke_package_bulk_request(
 
         if !resp.status().is_success() {
             println_verbose(&format!("  HTTP STATUS {}", resp.status().as_str()));
+            if resp.status() == 406 {
+                println_verbose("bulk queries may not be supported by this repository.");
+                max_batch_size = 1;
+            }
         }
 
         // if we get a client err response - try reducing url length (first)

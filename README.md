@@ -15,6 +15,15 @@ R(ocket-fast) [Chocolatey](https://chocolatey.org/) queries.
 
 ![roco logo](./roco.png)
 
+> ***Important Notice, March 2024***
+
+Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages), the main performance benefit of roco when dealing with this feed is gone. - Bulk queries to this repository are not possible anymore.
+Rocolatey will still be faster than choco with CCR, although only in the `--ignore-http-cache` mode of `choco.exe`.
+
+All other NuGetV2 feeds/artifact repositories that I know of still support this feature - `roco.exe` will outperform `choco.exe` by factors on any of them, - especially interesting when you're dealing with internal feeds/ caching connectors to the community gallery.
+
+Due to the nature of how Chocolatey handles it's internal cache and the huge amount of wrong results Chocolatey gives when searching for outdated packages, the development of Rocolatey will be continued for the forseeable future.
+
 > ***Installing...***
 
 Use Chocolatey!
@@ -50,23 +59,14 @@ Yes.
 
 > ***SHOULD I use Rocolatey in productive environments?***
 
-It depends. (probably not)
-If you need to do a LOT of outdated checks, Rocolatey may be the thing you're looking for.
+It depends. (probably yes if do a lot of outdated checks and require up-to-date (non-cached results))
 For most use-cases, I would recommend sticking to `choco.exe`.
+(note though `roco.exe` will give up-to-date results always, whereas `choco.exe` requires `--ignore-http-cache` for the same results)
 
 > ***How much faster is `roco.exe` compared to `choco.exe`?***
 
-It very much depends on the number of installed packages and configured feeds, generally speaking roco should always be _much_ faster than choco, the difference becomes bigger when dealing with many packages and feeds.
-
-Following table contains a couple of comparisons of `choco.exe` and `roco.exe`, mind that I've been using `Chocolatey v0.10.15` for all tests.
-
-| Command                              | #Packages | #Feeds |    Choco |     Roco | Speedup |
-| ------------------------------------ | :-------: | :----: | -------: | -------: | :-----: |
-| `choco source list` vs `roco source` |    150    |   3    | 4.26 sec | 0.02 sec | > 200x  |
-| `choco list -lo` vs `roco list`      |    150    |   2    |  8.2 sec | 0.15 sec |  > 50x  |
-| `choco list -lo` vs `roco list`      |    231    |   5    |  6.6 sec | 0.21 sec |  > 30x  |
-| `choco outdated` vs `roco outdated`  |    231    |   5    | 90.6 sec | 8.36 sec |  > 10x  |
-| `choco outdated` vs `roco outdated`  |    150    |   2    | 97.6 sec | 12.2 sec |  > 8x   |
+It very much depends on the number of installed packages and configured feeds, generally speaking roco should always be faster than choco, except for the Chocolatey Community Gallery (starting March 2024).
+Roco becomes faster when dealing with many packages and feeds.
 
 ## rocolatey-cli ("roco")
 
