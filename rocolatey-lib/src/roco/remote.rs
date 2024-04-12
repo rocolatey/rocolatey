@@ -141,23 +141,31 @@ async fn get_latest_remote_packages(
 ) -> Result<HashMap<String, Package>, Box<dyn std::error::Error>> {
     let mut remote_pkgs: HashMap<String, Package> = HashMap::new();
 
+    let num_parts = num_cpus::get_physical();
+    let chunk_size = (pkgs.len() + num_parts - 1) / num_parts;
+
     // process feeds in parallel
     let mut tasks = vec![];
     let feeds = feeds.clone();
+
     for f in feeds {
-        let pkgs = pkgs.clone(); // need to clone because of the capture
-        tasks.push(tokio::spawn(async move {
-            let pkgs = get_latest_remote_packages_on_feed(&pkgs, &f, prerelease)
-                .await
-                .unwrap_or_else(|e| {
-                    if !limit_output {
-                        eprintln!("failed to fetch packages: {}", e)
-                    }
-                    vec![]
-                });
-            pkgs
-        }));
+        for chunk in pkgs.chunks(chunk_size) {
+            let pkgs = chunk.to_vec();
+            let feed = f.clone();
+            tasks.push(tokio::spawn(async move {
+                let pkgs = get_latest_remote_packages_on_feed(&pkgs, &feed, prerelease)
+                    .await
+                    .unwrap_or_else(|e| {
+                        if !limit_output {
+                            eprintln!("failed to fetch packages: {}", e)
+                        }
+                        vec![]
+                    });
+                pkgs
+            }));
+        }
     }
+
     for t in tasks {
         let pkgs = t.await.unwrap();
         for p in pkgs {
@@ -373,6 +381,10 @@ pub(crate) async fn invoke_package_bulk_request(
 
         if !resp.status().is_success() {
             println_verbose(&format!("  HTTP STATUS {}", resp.status().as_str()));
+            if resp.status() == 406 {
+                println_verbose("bulk queries may not be supported by this repository.");
+                max_batch_size = 1;
+            }
         }
 
         // if we get a client err response - try reducing url length (first)

@@ -4,7 +4,7 @@
   <metadata>
     <id>rocolatey</id>
     <title>ROCO(latey)</title>
-    <version>0.8.2</version>
+    <version>0.9.0</version>
     <authors>Manfred Wallner</authors>
     <owners>Manfred Wallner</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -34,6 +34,9 @@ Normally you should not run multiple Chocolatey instances at the same time, howe
 ### How much faster is roco.exe compared to choco.exe?
 
 It very much depends on the number of installed packages and configured feeds, generally speaking roco should always be much faster than choco, the difference becomes bigger when dealing with many packages and feeds.
+
+Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages) in March 2024, the main performance benefit of roco when dealing with this feed is gone. - Bulk queries to this repository are not possible anymore.
+Rocolatey will still be faster than choco with CCR, although only in the `--ignore-http-cache` mode of `choco.exe`.
 
     </description>
     <copyright>Copyright (c) 2020-2024 Manfred Wallner</copyright>
