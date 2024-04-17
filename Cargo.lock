@@ -1171,7 +1171,7 @@ dependencies = [
 
 [[package]]
 name = "roco"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "clap 4.1.4",
  "clap_complete",
@@ -1181,7 +1181,7 @@ dependencies = [
 
 [[package]]
 name = "rocolatey-lib"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "futures",
  "glob",
@@ -1200,7 +1200,7 @@ dependencies = [
 
 [[package]]
 name = "rocolatey-server"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "clap 3.2.25",
  "rocolatey-lib",
