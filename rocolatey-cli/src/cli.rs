@@ -29,8 +29,10 @@ pub fn build_cli() -> Command {
     .subcommand(
       Command::new("list")
         .about("list local installed packages")
+        .arg(Arg::new("filter").default_value("all"))
         .arg(&common_arg_limitoutput)
-        .arg(&common_arg_verbose),
+        .arg(&common_arg_verbose)
+        .arg(Arg::new("deptree").long("dependency-tree").action(ArgAction::SetTrue).help("list dependencies")),
     )
     .subcommand(
       Command::new("bad")

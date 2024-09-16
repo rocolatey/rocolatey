@@ -106,6 +106,7 @@ fn extract_packages(pkgs_res: &mut Vec<Package>, resp: &String) {
                     id: p.id.clone(),
                     version: p.version.clone(),
                     pinned: false,
+                    dependencies: None
                 })
             });
         }

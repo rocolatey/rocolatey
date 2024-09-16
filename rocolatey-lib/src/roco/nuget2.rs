@@ -149,6 +149,7 @@ pub(crate) fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
                         id: pkg_name.to_string(),
                         version: pkg_version.to_string(),
                         pinned: false,
+                        dependencies: None
                     });
                     state = ODataParserState::LookingForEntry;
                 }

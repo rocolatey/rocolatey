@@ -15,6 +15,7 @@ pub enum NuspecTag {
     Null,
     Id,
     Version,
+    Dependency,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -30,6 +31,7 @@ pub struct Package {
     pub id: String,
     pub version: String,
     pub pinned: bool,
+    pub dependencies: Option<Vec<Package>>,
 }
 
 impl Package {

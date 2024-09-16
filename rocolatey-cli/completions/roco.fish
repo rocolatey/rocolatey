@@ -7,6 +7,7 @@ complete -c roco -n "__fish_use_subcommand" -f -a "source" -d 'list choco source
 complete -c roco -n "__fish_use_subcommand" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c roco -n "__fish_seen_subcommand_from list" -s r -l limitoutput -d 'limit the output to essential information'
 complete -c roco -n "__fish_seen_subcommand_from list" -s v -l verbose -d 'be verbose'
+complete -c roco -n "__fish_seen_subcommand_from list" -l dependency-tree -d 'list dependencies'
 complete -c roco -n "__fish_seen_subcommand_from list" -s h -l help -d 'Print help'
 complete -c roco -n "__fish_seen_subcommand_from bad" -s r -l limitoutput -d 'limit the output to essential information'
 complete -c roco -n "__fish_seen_subcommand_from bad" -s v -l verbose -d 'be verbose'

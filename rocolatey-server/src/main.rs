@@ -53,7 +53,7 @@ async fn main() {
 }
 
 fn req_local(limitoutput: bool) -> String {
-    get_local_packages_text(limitoutput)
+    get_local_packages_text("all", limitoutput)
 }
 
 fn req_local_bad(limitoutput: bool) -> String {
