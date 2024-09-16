@@ -77,7 +77,7 @@ pub(crate) async fn get_remote_packages(
         true => "true",
         false => "false",
     };
-    let query_string_base: String = format!("{}/?prerelease={}&q=", service, latest_filter);
+    let query_string_base: String = format!("{}?prerelease={}&q=", service, latest_filter);
 
     let query_str_delim = " ".to_owned();
     let query_str_end = "".to_owned();
