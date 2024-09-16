@@ -1,10 +1,13 @@
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::println_verbose;
-use crate::roco::{get_choco_sources, get_chocolatey_dir, Feed, NuspecTag, Package};
+use crate::roco::{
+    get_choco_sources, get_chocolatey_dir, xml_attribs_to_map, Feed, NuspecTag, Package,
+};
 
 pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
     let mut pkgs: Vec<Package> = Vec::new();
@@ -38,11 +41,75 @@ pub fn get_local_bad_packages() -> Result<Vec<Package>, Box<dyn std::error::Erro
     Ok(pkgs)
 }
 
-pub fn get_local_packages_text(limitoutput: bool) -> String {
+fn get_dependency_tree_pkg_text(
+    level: usize,
+    pkg: &Package,
+    packages: &HashMap<String, &Package>,
+) -> String {
+    let mut res = String::new();
+
+    if level == 1 {
+        res.push_str(&format!("{} ({})\r\n", pkg.id, pkg.version));
+    }
+
+    if pkg.dependencies.is_some() {
+        for (_i, p) in pkg.dependencies.as_ref().unwrap().iter().enumerate() {
+            let v = if p.version.is_empty() {
+                String::new()
+            } else {
+                format!("({})", p.version)
+            };
+
+            res.push_str(&format!("{}-{} {}\r\n", " |".repeat(level), p.id, v));
+
+            let package = packages.get(&p.id.to_lowercase());
+            if package.is_some() {
+                res.push_str(&get_dependency_tree_pkg_text(
+                    level + 1,
+                    package.unwrap(),
+                    packages,
+                ));
+            } else {
+                res.push_str(&format!(
+                    "ERROR: failed to locate {} among local packages\r\n",
+                    p.id
+                ));
+            }
+        }
+    }
+
+    res
+}
+
+pub fn get_dependency_tree_text(filter: &str) -> String {
+    let mut res = String::new();
+
+    let packages = get_local_packages().unwrap();
+    let filter = filter.to_lowercase();
+
+    let mut packages_lookup = HashMap::new();
+    for (_i, p) in packages.iter().enumerate() {
+        let lowercase_id = p.id.to_lowercase();
+        packages_lookup.insert(lowercase_id, p);
+    }
+
+    for (_i, p) in packages.iter().enumerate() {
+        if filter != "all" {
+            if !p.id.contains(&filter) {
+                continue;
+            }
+        }
+        res.push_str(&get_dependency_tree_pkg_text(1, p, &packages_lookup));
+    }
+
+    res
+}
+
+pub fn get_local_packages_text(filter: &str, limitoutput: bool) -> String {
     let packages = get_local_packages().unwrap();
     let num_packages = packages.len();
     let mut res = String::new();
-    res.push_str(get_package_list_text(packages, limitoutput).as_ref());
+    res.push_str(get_package_list_text(filter, packages, limitoutput).as_ref());
     if !limitoutput {
         res.push_str(&format!("\r\n{} packages installed.", num_packages));
     }
@@ -53,7 +120,7 @@ pub fn get_local_bad_packages_text(limitoutput: bool) -> String {
     let packages = get_local_bad_packages().unwrap();
     let num_packages = packages.len();
     let mut res = String::new();
-    res.push_str(get_package_list_text(packages, limitoutput).as_ref());
+    res.push_str(get_package_list_text("all", packages, limitoutput).as_ref());
     if !limitoutput {
         res.push_str(&format!("\r\n{} packages in lib-bad.", num_packages));
     }
@@ -123,11 +190,18 @@ pub fn get_sources_text(limitoutput: bool) -> String {
     res
 }
 
-fn get_package_list_text(packages: Vec<Package>, limitoutput: bool) -> String {
+fn get_package_list_text(filter: &str, packages: Vec<Package>, limitoutput: bool) -> String {
     let mut res = String::new();
     let num_iterations = packages.len();
     let sep = if limitoutput { "|" } else { " " };
+    let filter = filter.to_lowercase();
+
     for (i, p) in packages.iter().enumerate() {
+        if filter != "all" {
+            if !p.id.contains(&filter) {
+                continue;
+            }
+        }
         res.push_str(&format!("{}{}{}", p.id(), sep, p.version()));
         if i < (num_iterations - 1) {
             res.push_str("\r\n");
@@ -147,12 +221,30 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
     let mut buf = Vec::new();
     let mut tag: NuspecTag = NuspecTag::Null;
 
+    let mut dependencies = Vec::new();
+
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref e)) => match e.name().as_ref() {
                 b"id" => tag = NuspecTag::Id,
                 b"version" => tag = NuspecTag::Version,
                 _ => tag = NuspecTag::Null,
+            },
+            Ok(Event::Empty(ref e)) => match e.name().as_ref() {
+                b"dependency" => {
+                    tag = NuspecTag::Dependency;
+                    let attrib_map = xml_attribs_to_map(&mut e.attributes());
+                    let id = attrib_map.get("id").unwrap();
+                    let empty = String::new();
+                    let version = attrib_map.get("version").unwrap_or(&empty);
+                    dependencies.push(Package {
+                        id: id.to_string(),
+                        version: version.to_string(),
+                        pinned: false,
+                        dependencies: None,
+                    });
+                }
+                _ => (),
             },
             Ok(Event::Text(e)) => match tag {
                 // always ensure package ids are lowercase
@@ -177,16 +269,26 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
     ));
     pinned_file.push(".pin");
 
+    let the_dependencies = if dependencies.is_empty() {
+        None
+    } else {
+        Some(dependencies)
+    };
+
     Package {
         id: pkg_name.to_string(),
         version: pkg_version.to_string(),
         pinned: pinned_file.exists(),
+        dependencies: the_dependencies,
     }
 }
 
 fn get_package_from_nupkg(filename: &str) -> Option<Package> {
     // println!(" .. pkg from filename: {}", filename);
+
     // TODO - is this sufficient? / do we need to extract the nuspec from the nupkg in order to get the id / version ?
+    // https://crates.io/crates/zip
+
     let semver_regex = regex::Regex::new(r#"^(.+?)\.(((\d+\.?)+)(-.+)?)\.nupkg$"#).unwrap();
     match semver_regex.captures(filename) {
         Some(captures) => {
@@ -199,6 +301,7 @@ fn get_package_from_nupkg(filename: &str) -> Option<Package> {
                     .get(2)
                     .map_or(String::from(""), |m| String::from(m.as_str())),
                 pinned: false,
+                dependencies: None,
             })
         }
         None => {
@@ -297,6 +400,7 @@ mod tests {
             id: "Firefox".to_string(),
             version: "81.0.0.0".to_string(),
             pinned: false,
+            dependencies: None,
         }];
         let pkgs = get_nupkgs_from_path(&pkgs, &tests_feed, false).unwrap();
 

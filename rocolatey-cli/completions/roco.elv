@@ -33,6 +33,7 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --limitoutput 'limit the output to essential information'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
+            cand --dependency-tree 'list dependencies'
             cand -h 'Print help'
             cand --help 'Print help'
         }

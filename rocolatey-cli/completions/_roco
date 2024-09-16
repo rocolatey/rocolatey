@@ -34,8 +34,10 @@ _arguments "${_arguments_options[@]}" \
 '--limitoutput[limit the output to essential information]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
+'--dependency-tree[list dependencies]' \
 '-h[Print help]' \
 '--help[Print help]' \
+'::filter:' \
 && ret=0
 ;;
 (bad)
