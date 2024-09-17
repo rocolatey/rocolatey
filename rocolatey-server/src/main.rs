@@ -7,7 +7,7 @@ use rocolatey_lib::roco::local::{get_local_bad_packages_text, get_local_packages
 #[tokio::main]
 async fn main() {
     let matches = Command::new("Rocolatey Server")
-        .version("0.9.0")
+        .version("0.9.1")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides web access to rocolatey-lib")
         .arg(
@@ -53,7 +53,7 @@ async fn main() {
 }
 
 fn req_local(limitoutput: bool) -> String {
-    get_local_packages_text(limitoutput)
+    get_local_packages_text("all", limitoutput)
 }
 
 fn req_local_bad(limitoutput: bool) -> String {

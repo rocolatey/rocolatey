@@ -141,10 +141,10 @@ async fn get_latest_remote_packages(
 ) -> Result<HashMap<String, Package>, Box<dyn std::error::Error>> {
     let mut remote_pkgs: HashMap<String, Package> = HashMap::new();
 
-    let num_parts = num_cpus::get_physical();
+    let num_threads = num_cpus::get();
+    let num_parts = std::cmp::max(2, std::cmp::min(num_threads, num_threads / feeds.len()));
     let chunk_size = (pkgs.len() + num_parts - 1) / num_parts;
 
-    // process feeds in parallel
     let mut tasks = vec![];
     let feeds = feeds.clone();
 

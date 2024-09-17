@@ -161,7 +161,7 @@ _roco() {
             return 0
             ;;
         roco__list)
-            opts="-r -v -h --limitoutput --verbose --help"
+            opts="-r -v -h --limitoutput --verbose --dependency-tree --help [filter]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

@@ -77,7 +77,7 @@ pub(crate) async fn get_remote_packages(
         true => "true",
         false => "false",
     };
-    let query_string_base: String = format!("{}/?prerelease={}&q=", service, latest_filter);
+    let query_string_base: String = format!("{}?prerelease={}&q=", service, latest_filter);
 
     let query_str_delim = " ".to_owned();
     let query_str_end = "".to_owned();
@@ -106,6 +106,7 @@ fn extract_packages(pkgs_res: &mut Vec<Package>, resp: &String) {
                     id: p.id.clone(),
                     version: p.version.clone(),
                     pinned: false,
+                    dependencies: None
                 })
             });
         }

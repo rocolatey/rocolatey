@@ -37,6 +37,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('--limitoutput', 'limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
             [CompletionResult]::new('-v', 'v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', 'verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--dependency-tree', 'dependency-tree', [CompletionResultType]::ParameterName, 'list dependencies')
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
             break

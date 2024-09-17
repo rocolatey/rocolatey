@@ -4,5 +4,10 @@
   <metadata>
     <id>adobeair</id>
     <version>0.0.42</version>
+
+    <dependencies>
+     <dependency id="chocolatey" version="0.10" />
+     <dependency id="jre8" />
+   </dependencies>
   </metadata>
 </package>

@@ -23,14 +23,16 @@ pub fn build_cli() -> Command {
         .help("require https/ssl-validation");
 
     Command::new("Rocolatey")
-    .version("0.9.0")
+    .version("0.9.1")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
       Command::new("list")
         .about("list local installed packages")
+        .arg(Arg::new("filter").default_value("all"))
         .arg(&common_arg_limitoutput)
-        .arg(&common_arg_verbose),
+        .arg(&common_arg_verbose)
+        .arg(Arg::new("deptree").long("dependency-tree").action(ArgAction::SetTrue).help("list dependencies")),
     )
     .subcommand(
       Command::new("bad")
