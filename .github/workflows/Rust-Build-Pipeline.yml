@@ -19,6 +19,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v4
+    - name: generate license info (${{ matrix.os }})
+      run: cargo bundle-licenses --format json --output THIRDPARTY.json
     - name: Build on ${{ matrix.os }}
       run: cargo build --verbose
     - name: Run tests on ${{ matrix.os }}
@@ -33,6 +35,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v4
+    - name: generate license info (${{ matrix.os }})
+      run: cargo bundle-licenses --format json --output THIRDPARTY.json
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
@@ -58,6 +62,8 @@ jobs:
           profile: minimal
           override: true
           target: ${{ matrix.target }}
+      - name: generate license info (${{ matrix.os }})
+        run: cargo bundle-licenses --format json --output THIRDPARTY.json
       - name: Build target
         uses: actions-rs/cargo@v1
         with:
