@@ -181,7 +181,7 @@ _roco() {
             return 0
             ;;
         roco__license)
-            opts="-h --help"
+            opts="-f -h --full --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

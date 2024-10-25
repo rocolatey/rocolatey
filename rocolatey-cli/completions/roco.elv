@@ -73,6 +73,8 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;license'= {
+            cand -f 'display full license information'
+            cand --full 'display full license information'
             cand -h 'Print help'
             cand --help 'Print help'
         }

@@ -34,16 +34,20 @@ fn main() {
     cli_completions();
 
     let json_path = PathBuf::from("../THIRDPARTY.json");
+    let json_content = fs::read_to_string(&json_path).expect("Failed to read THIRDPARTY.json");
 
-    let json_content = fs::read_to_string(&json_path).expect("Failed to read json_data.json");
+    let license_path = PathBuf::from("../LICENSE.txt");
+    let license_content = fs::read_to_string(&license_path).expect("Failed to read LICENSE.txt");
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = PathBuf::from(out_dir).join("licenses_json.rs");
 
-    // Write the JSON content as a static string in the generated Rust file
     fs::write(
         &dest_path,
-        format!("pub static JSON_LICENSE_DATA: &str = r#\"{}\"#;", json_content),
+        format!(
+            "pub static JSON_LICENSE_DATA: &str = r#\"{}\"#;\npub static ROCO_LICENSE_JSON: &str = r#\"{}\"#;",
+            json_content, license_content
+        ),
     )
     .expect("Failed to write licenses_json.rs");
 }

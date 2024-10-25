@@ -83,6 +83,8 @@ _arguments "${_arguments_options[@]}" \
 ;;
 (license)
 _arguments "${_arguments_options[@]}" \
+'-f[display full license information]' \
+'--full[display full license information]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0

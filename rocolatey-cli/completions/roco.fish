@@ -28,6 +28,7 @@ complete -c roco -n "__fish_seen_subcommand_from outdated" -s h -l help -d 'Prin
 complete -c roco -n "__fish_seen_subcommand_from source" -s r -l limitoutput -d 'limit the output to essential information'
 complete -c roco -n "__fish_seen_subcommand_from source" -s v -l verbose -d 'be verbose'
 complete -c roco -n "__fish_seen_subcommand_from source" -s h -l help -d 'Print help'
+complete -c roco -n "__fish_seen_subcommand_from license" -s f -l full -d 'display full license information'
 complete -c roco -n "__fish_seen_subcommand_from license" -s h -l help -d 'Print help'
 complete -c roco -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from bad; and not __fish_seen_subcommand_from outdated; and not __fish_seen_subcommand_from source; and not __fish_seen_subcommand_from license; and not __fish_seen_subcommand_from help" -f -a "list" -d 'list local installed packages'
 complete -c roco -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from bad; and not __fish_seen_subcommand_from outdated; and not __fish_seen_subcommand_from source; and not __fish_seen_subcommand_from license; and not __fish_seen_subcommand_from help" -f -a "bad" -d 'list packages in lib-bad/'

@@ -81,6 +81,8 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;license' {
+            [CompletionResult]::new('-f', 'f', [CompletionResultType]::ParameterName, 'display full license information')
+            [CompletionResult]::new('--full', 'full', [CompletionResultType]::ParameterName, 'display full license information')
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
             break
