@@ -1,11 +1,38 @@
 extern crate clap;
 mod cli;
 
+use serde::Deserialize;
+use serde_json::Result;
+
+// Define the structure of the JSON data
+#[derive(Debug, Deserialize)]
+struct LicenseInfo {
+    license: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Library {
+    package_name: String,
+    license: String,
+    licenses: Vec<LicenseInfo>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Root {
+    third_party_libraries: Vec<Library>,
+}
+
+include!(concat!(env!("OUT_DIR"), "/licenses_json.rs"));
+
 use rocolatey_lib::roco::local::{
     get_dependency_tree_text, get_local_bad_packages_text, get_local_packages_text,
     get_sources_text,
 };
 use rocolatey_lib::roco::remote::get_outdated_packages;
+
+fn parse_json(json_str: &str) -> Result<Root> {
+    serde_json::from_str(json_str)
+}
 
 #[tokio::main]
 async fn main() {
@@ -46,6 +73,21 @@ async fn main() {
             rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
             let r = matches.get_flag("limitoutput");
             print!("{}", get_sources_text(r));
+        }
+        Some(("license", _matches)) => {
+            println!("------------------------------------------------");
+            println!(" Rocolatey is built using the following crates: ");
+            println!("------------------------------------------------");
+
+            let root: Root = parse_json(JSON_LICENSE_DATA).expect("Failed to parse JSON");
+
+            // Output the package_name and license for each third-party library
+            for library in root.third_party_libraries {
+                println!(
+                    "Package: {}, License: {}",
+                    library.package_name, library.license
+                );
+            }
         }
         _ => {
             print!(

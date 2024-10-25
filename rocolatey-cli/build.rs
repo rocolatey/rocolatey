@@ -1,10 +1,12 @@
+use std::{env, fs, path::PathBuf};
+
 use clap_complete::{
     generate_to, shells::Bash, shells::Elvish, shells::Fish, shells::PowerShell, shells::Zsh,
 };
 
 include!("src/cli.rs");
 
-fn main() {
+fn cli_completions() {
     let mut app = build_cli();
     let appname = "roco";
     app.set_bin_name(appname);
@@ -26,4 +28,22 @@ fn main() {
 
     let path = generate_to::<Elvish, _, _>(Elvish, &mut app, appname, &outdir);
     println!("cargo:info=> Elvish completion file: {:?}", path);
+}
+
+fn main() {
+    cli_completions();
+
+    let json_path = PathBuf::from("../THIRDPARTY.json");
+
+    let json_content = fs::read_to_string(&json_path).expect("Failed to read json_data.json");
+
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = PathBuf::from(out_dir).join("licenses_json.rs");
+
+    // Write the JSON content as a static string in the generated Rust file
+    fs::write(
+        &dest_path,
+        format!("pub static JSON_LICENSE_DATA: &str = r#\"{}\"#;", json_content),
+    )
+    .expect("Failed to write licenses_json.rs");
 }

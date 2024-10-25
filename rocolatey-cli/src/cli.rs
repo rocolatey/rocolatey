@@ -82,4 +82,7 @@ pub fn build_cli() -> Command {
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose),
     )
+    .subcommand(
+      Command::new("license").about("display license information")
+    )
 }

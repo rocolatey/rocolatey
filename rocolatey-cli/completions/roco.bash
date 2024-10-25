@@ -18,6 +18,9 @@ _roco() {
             Rocolatey,help)
                 cmd="Rocolatey__help"
                 ;;
+            Rocolatey,license)
+                cmd="Rocolatey__license"
+                ;;
             Rocolatey,list)
                 cmd="Rocolatey__list"
                 ;;
@@ -32,6 +35,9 @@ _roco() {
                 ;;
             Rocolatey__help,help)
                 cmd="Rocolatey__help__help"
+                ;;
+            Rocolatey__help,license)
+                cmd="Rocolatey__help__license"
                 ;;
             Rocolatey__help,list)
                 cmd="Rocolatey__help__list"
@@ -49,7 +55,7 @@ _roco() {
 
     case "${cmd}" in
         roco)
-            opts="-h -V --help --version list bad outdated source help"
+            opts="-h -V --help --version list bad outdated source license help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -77,7 +83,7 @@ _roco() {
             return 0
             ;;
         roco__help)
-            opts="list bad outdated source help"
+            opts="list bad outdated source license help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -105,6 +111,20 @@ _roco() {
             return 0
             ;;
         roco__help__help)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        roco__help__license)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -149,6 +169,20 @@ _roco() {
         roco__help__source)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        roco__license)
+            opts="-h --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
