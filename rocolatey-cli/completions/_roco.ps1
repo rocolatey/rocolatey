@@ -29,6 +29,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'list packages in lib-bad/')
             [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'Returns a list of outdated packages.')
             [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'list choco sources')
+            [CompletionResult]::new('license', 'license', [CompletionResultType]::ParameterValue, 'display license information')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -79,11 +80,19 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
+        'roco;license' {
+            [CompletionResult]::new('-f', 'f', [CompletionResultType]::ParameterName, 'display full license information')
+            [CompletionResult]::new('--full', 'full', [CompletionResultType]::ParameterName, 'display full license information')
+            [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
         'roco;help' {
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list local installed packages')
             [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'list packages in lib-bad/')
             [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'Returns a list of outdated packages.')
             [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'list choco sources')
+            [CompletionResult]::new('license', 'license', [CompletionResultType]::ParameterValue, 'display license information')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -97,6 +106,9 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;help;source' {
+            break
+        }
+        'roco;help;license' {
             break
         }
         'roco;help;help' {

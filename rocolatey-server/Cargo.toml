@@ -1,4 +1,5 @@
 [package]
+license = "MIT"
 name = "rocolatey-server"
 version = "0.9.1"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
