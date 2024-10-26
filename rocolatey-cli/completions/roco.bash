@@ -30,6 +30,9 @@ _roco() {
             Rocolatey,source)
                 cmd="Rocolatey__source"
                 ;;
+            Rocolatey,upgrade)
+                cmd="Rocolatey__upgrade"
+                ;;
             Rocolatey__help,bad)
                 cmd="Rocolatey__help__bad"
                 ;;
@@ -48,6 +51,9 @@ _roco() {
             Rocolatey__help,source)
                 cmd="Rocolatey__help__source"
                 ;;
+            Rocolatey__help,upgrade)
+                cmd="Rocolatey__help__upgrade"
+                ;;
             *)
                 ;;
         esac
@@ -55,7 +61,7 @@ _roco() {
 
     case "${cmd}" in
         roco)
-            opts="-h -V --help --version list bad outdated source license help"
+            opts="-h -V --help --version list bad outdated source license upgrade help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -83,7 +89,7 @@ _roco() {
             return 0
             ;;
         roco__help)
-            opts="list bad outdated source license help"
+            opts="list bad outdated source license upgrade help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -180,6 +186,20 @@ _roco() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
+        roco__help__upgrade)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
         roco__license)
             opts="-f -h --full --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
@@ -224,6 +244,20 @@ _roco() {
             ;;
         roco__source)
             opts="-r -v -h --limitoutput --verbose --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        roco__upgrade)
+            opts="-p -r -v -h --pre --limitoutput --verbose --sslcheck --help [pkg]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

@@ -23,7 +23,7 @@ pub fn build_cli() -> Command {
         .help("require https/ssl-validation");
 
     Command::new("Rocolatey")
-    .version("0.9.1")
+    .version("0.9.2")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
@@ -90,5 +90,16 @@ pub fn build_cli() -> Command {
           .action(ArgAction::SetTrue)
           .help("display full license information"),
       )
+    )
+    .subcommand(
+      Command::new("upgrade").about("upgrade choco packages (using choco.exe)")
+        .arg(
+          Arg::new("pkg")
+          .default_value("all")
+        )
+        .arg(&common_arg_prerelease)
+        .arg(&common_arg_limitoutput)
+        .arg(&common_arg_verbose)
+        .arg(&common_arg_enable_cert_validation),
     )
 }

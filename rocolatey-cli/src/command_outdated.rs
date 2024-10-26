@@ -1,5 +1,4 @@
-use rocolatey_lib::roco::remote::get_outdated_packages;
-
+use rocolatey_lib::roco::remote::get_outdated_packages_text;
 
 pub async fn outdated(matches: &clap::ArgMatches) {
     rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
@@ -13,6 +12,6 @@ pub async fn outdated(matches: &clap::ArgMatches) {
     let pkg = matches.get_one::<String>("pkg").unwrap();
     print!(
         "{}",
-        get_outdated_packages(pkg, r, l, pre, ignore_pinned, ignore_unfound).await
+        get_outdated_packages_text(pkg, r, l, pre, ignore_pinned, ignore_unfound).await
     );
 }

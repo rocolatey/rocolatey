@@ -1,11 +1,12 @@
 extern crate clap;
 mod cli;
 
-mod command_list;
 mod command_bad;
 mod command_license;
+mod command_list;
 mod command_outdated;
 mod command_source;
+mod command_upgrade;
 
 #[tokio::main]
 async fn main() {
@@ -16,6 +17,7 @@ async fn main() {
         Some(("bad", matches)) => command_bad::bad(matches),
         Some(("license", matches)) => command_license::license(matches),
         Some(("outdated", matches)) => command_outdated::outdated(matches).await,
+        Some(("upgrade", matches)) => command_upgrade::upgrade(matches).await,
         Some(("source", matches)) => command_source::source(matches),
         _ => {
             if let Err(e) = cli::build_cli().print_help() {
