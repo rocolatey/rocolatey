@@ -9,6 +9,7 @@ pub async fn upgrade(matches: &clap::ArgMatches) {
     let pkg = matches.get_one::<String>("pkg").unwrap();
 
     let (_, outdated_packages) = get_outdated_packages(pkg, r, pre, true, true).await;
+
     let package_names: Vec<&str> = outdated_packages
         .iter()
         .map(|pkg| pkg.id.as_str())
@@ -19,7 +20,7 @@ pub async fn upgrade(matches: &clap::ArgMatches) {
         return;
     }
 
-    let mut choco_args = vec!["choco", "upgrade", "--ignore-http-args", "-y"];
+    let mut choco_args = vec!["upgrade", "--ignore-http-cache", "-y"];
 
     if pre {
         choco_args.push("--pre");
@@ -29,21 +30,21 @@ pub async fn upgrade(matches: &clap::ArgMatches) {
         choco_args.push("-r");
     }
 
-    let elevate_cmd = if cfg!(target_os = "windows") {
-        "runas"
-    } else {
-        "sudo"
-    };
+    if rocolatey_lib::is_verbose_mode() {
+        choco_args.push("-v");
+    }
 
-    let status = Command::new(elevate_cmd)
+    let status = Command::new("choco")
         .args(&choco_args)
         .args(&package_names)
+        .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .status()
-        .expect("Failed to start choco upgrade process");
+        .expect("Failed to start elevated choco upgrade process")
+        .success();
 
-    if status.success() {
+    if status {
         println!(
             "Successfully upgraded packages: {}",
             package_names.join(", ")

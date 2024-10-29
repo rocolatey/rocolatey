@@ -2,7 +2,10 @@ use warp::Filter;
 extern crate clap;
 use clap::{Arg, Command};
 
-use rocolatey_lib::roco::local::{get_local_bad_packages_text, get_local_packages_text};
+use rocolatey_lib::roco::{
+    local::{get_local_bad_packages_text, get_local_packages_text},
+    remote::get_outdated_packages_text,
+};
 
 #[tokio::main]
 async fn main() {
@@ -38,24 +41,38 @@ async fn main() {
 
     let warp_filter = api_base
         .and(warp::path!("local"))
-        .map(|| req_local(false))
+        .and_then(|| req_local(false))
         .or(api_base
             .and(warp::path!("local" / "r"))
-            .map(|| req_local(true)))
+            .and_then(|| req_local(true)))
         .or(api_base
             .and(warp::path!("bad"))
-            .map(|| req_local_bad(false)))
+            .and_then(|| req_local_bad(false)))
         .or(api_base
             .and(warp::path!("bad" / "r"))
-            .map(|| req_local_bad(true)));
+            .and_then(|| req_local_bad(true)))
+        .or(api_base
+            .and(warp::path!("outdated"))
+            .and_then(|| req_outdated(false)))
+        .or(api_base
+            .and(warp::path!("outdated" / "r"))
+            .and_then(|| req_outdated(true)));
+
     let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
     warp::serve(warp_filter).run((server_ip, bind_port)).await;
 }
 
-fn req_local(limitoutput: bool) -> String {
-    get_local_packages_text("all", limitoutput)
+async fn req_local(limitoutput: bool) -> Result<impl warp::Reply, warp::Rejection> {
+    println!("req_local");
+    Ok(get_local_packages_text("all", limitoutput))
 }
 
-fn req_local_bad(limitoutput: bool) -> String {
-    get_local_bad_packages_text(limitoutput)
+async fn req_local_bad(limitoutput: bool) -> Result<impl warp::Reply, warp::Rejection> {
+    println!("req_local_bad");
+    Ok(get_local_bad_packages_text(limitoutput))
+}
+
+async fn req_outdated(limitoutput: bool) -> Result<impl warp::Reply, warp::Rejection> {
+    println!("req_outdated");
+    Ok(get_outdated_packages_text("all", limitoutput, false, false, true, true).await)
 }

@@ -266,7 +266,63 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
 }
 
 fn decrypt_choco_config_string(encrypted: &str) -> String {
-    // TODO replace by using native dpadpi.CryptUnprotectData ??
+    /*
+    fn decrypt_choco_config_string(encrypted: &str) -> String {
+        println_verbose(&format!("decypher '{}'", encrypted));
+
+        // Convert the encrypted base64 string to bytes
+        let encrypted_bytes = base64::decode(encrypted).expect("Failed to decode base64 string");
+
+        // Create a DATA_BLOB for the encrypted data
+        let mut encrypted_blob = DATA_BLOB {
+            cbData: encrypted_bytes.len() as u32,
+            pbData: encrypted_bytes.as_ptr() as *mut u8,
+        };
+
+        // Create an empty DATA_BLOB for the decrypted data
+        let mut decrypted_blob = DATA_BLOB {
+            cbData: 0,
+            pbData: null_mut(),
+        };
+
+        // Convert the optional entropy string to bytes
+        let entropy = CString::new("Chocolatey").expect("Failed to create CString");
+        let mut entropy_blob = DATA_BLOB {
+            cbData: entropy.as_bytes().len() as u32,
+            pbData: entropy.as_ptr() as *mut u8,
+        };
+
+        // Call CryptUnprotectData to decrypt the data
+        let result = unsafe {
+            CryptUnprotectData(
+                &mut encrypted_blob,
+                null_mut(),
+                &mut entropy_blob,
+                null_mut(),
+                null_mut(),
+                0,
+                &mut decrypted_blob,
+            )
+        };
+
+        if result == ERROR_SUCCESS {
+            // Convert the decrypted data to a string
+            let decrypted_bytes = unsafe {
+                std::slice::from_raw_parts(decrypted_blob.pbData, decrypted_blob.cbData as usize)
+            };
+            let decrypted_string = String::from_utf8_lossy(decrypted_bytes).to_string();
+
+            // Free the decrypted data
+            unsafe {
+                winapi::um::winbase::LocalFree(decrypted_blob.pbData as *mut _);
+            }
+
+            decrypted_string
+        } else {
+            panic!("Failed to decrypt data");
+        }
+    }
+    */
     println_verbose(&format!("decypher '{}'", encrypted));
     let pwsh = format!(
         "Add-Type -AssemblyName System.Security;([System.Text.UTF8Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect(([System.Convert]::FromBase64String('{}')),([System.Text.UTF8Encoding]::UTF8.GetBytes('Chocolatey')),[System.Security.Cryptography.DataProtectionScope]::LocalMachine)))",
