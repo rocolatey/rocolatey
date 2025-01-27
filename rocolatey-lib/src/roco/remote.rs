@@ -185,11 +185,10 @@ async fn get_latest_remote_packages(
 pub async fn get_outdated_packages(
     pkg: &str,
     limit_output: bool,
-    list_output: bool,
     prerelease: bool,
     ignore_pinned: bool,
     ignore_unfound: bool,
-) -> String {
+) -> (i32, Vec<OutdatedInfo>) {
     // foreach local package, compare remote version number
     let mut local_packages = local::get_local_packages().expect("failed to get local package list");
     if "all" != pkg {
@@ -281,6 +280,20 @@ pub async fn get_outdated_packages(
     }
 
     oi.sort_by(|a, b| a.id.to_lowercase().cmp(&b.id.to_lowercase()));
+
+    (warning_count, oi)
+}
+
+pub async fn get_outdated_packages_text(
+    pkg: &str,
+    limit_output: bool,
+    list_output: bool,
+    prerelease: bool,
+    ignore_pinned: bool,
+    ignore_unfound: bool,
+) -> String {
+    let (warning_count, oi) =
+        get_outdated_packages(pkg, limit_output, prerelease, ignore_pinned, ignore_unfound).await;
 
     let mut warnings = String::new();
     let mut res = String::new();

@@ -23,7 +23,7 @@ pub fn build_cli() -> Command {
         .help("require https/ssl-validation");
 
     Command::new("Rocolatey")
-    .version("0.9.1")
+    .version("0.9.2")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
@@ -91,4 +91,95 @@ pub fn build_cli() -> Command {
           .help("display full license information"),
       )
     )
+    .subcommand(
+      Command::new("upgrade").about("upgrade choco packages (using choco.exe)")
+        .arg(
+          Arg::new("pkg")
+          .default_value("all")
+        )
+        .arg(&common_arg_prerelease)
+        .arg(&common_arg_limitoutput)
+        .arg(&common_arg_verbose)
+        .arg(&common_arg_enable_cert_validation),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verify_cli() {
+        build_cli().debug_assert();
+    }
+
+    #[test]
+    fn test_list_command() {
+        let matches = build_cli()
+            .try_get_matches_from(vec![
+                "rocolatey",
+                "list",
+                "--dependency-tree",
+                "--limitoutput",
+                "--verbose",
+            ])
+            .unwrap();
+
+        assert!(matches.subcommand_matches("list").is_some());
+        let sub_matches = matches.subcommand_matches("list").unwrap();
+        assert!(sub_matches.contains_id("deptree"));
+        assert!(sub_matches.contains_id("limitoutput"));
+        assert!(sub_matches.contains_id("verbose"));
+    }
+
+    #[test]
+    fn test_source_command() {
+        let matches = build_cli()
+            .try_get_matches_from(vec!["rocolatey", "source", "--limitoutput", "--verbose"])
+            .unwrap();
+
+        assert!(matches.subcommand_matches("source").is_some());
+        let sub_matches = matches.subcommand_matches("source").unwrap();
+        assert!(sub_matches.contains_id("limitoutput"));
+        assert!(sub_matches.contains_id("verbose"));
+    }
+
+    #[test]
+    fn test_license_command() {
+        let matches = build_cli()
+            .try_get_matches_from(vec!["rocolatey", "license", "--full"])
+            .unwrap();
+
+        assert!(matches.subcommand_matches("license").is_some());
+        let sub_matches = matches.subcommand_matches("license").unwrap();
+        assert!(sub_matches.contains_id("full"));
+    }
+
+    #[test]
+    fn test_upgrade_command() {
+        let matches = build_cli()
+            .try_get_matches_from(vec![
+                "rocolatey",
+                "upgrade",
+                "--pre",
+                "--limitoutput",
+                "--verbose",
+                "--sslcheck",
+            ])
+            .unwrap();
+
+        assert!(matches.subcommand_matches("upgrade").is_some());
+        let sub_matches = matches.subcommand_matches("upgrade").unwrap();
+        assert_eq!(
+            sub_matches
+                .get_one::<String>("pkg")
+                .map(|s| s.as_str())
+                .unwrap(),
+            "all"
+        );
+        assert!(sub_matches.contains_id("prerelease"));
+        assert!(sub_matches.contains_id("limitoutput"));
+        assert!(sub_matches.contains_id("verbose"));
+        assert!(sub_matches.contains_id("ssl-validation-enabled"));
+    }
 }

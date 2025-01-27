@@ -86,3 +86,17 @@ pub fn license(matches: &clap::ArgMatches) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_license() {
+        assert_eq!(normalize_license("MIT OR Apache-2.0"), "Apache-2.0 OR MIT");
+        assert_eq!(normalize_license("Apache-2.0 OR MIT"), "Apache-2.0 OR MIT");
+        assert_eq!(normalize_license("MIT/Apache-2.0"), "Apache-2.0 OR MIT");
+        assert_eq!(normalize_license("Apache-2.0/MIT"), "Apache-2.0 OR MIT");
+        assert_eq!(normalize_license("MIT"), "MIT");
+    }
+}

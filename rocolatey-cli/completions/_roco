@@ -89,6 +89,20 @@ _arguments "${_arguments_options[@]}" \
 '--help[Print help]' \
 && ret=0
 ;;
+(upgrade)
+_arguments "${_arguments_options[@]}" \
+'-p[include prerelease versions]' \
+'--pre[include prerelease versions]' \
+'-r[limit the output to essential information]' \
+'--limitoutput[limit the output to essential information]' \
+'-v[be verbose]' \
+'--verbose[be verbose]' \
+'--sslcheck[require https/ssl-validation]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'::pkg:' \
+&& ret=0
+;;
 (help)
 _arguments "${_arguments_options[@]}" \
 ":: :_roco__help_commands" \
@@ -121,6 +135,10 @@ _arguments "${_arguments_options[@]}" \
 _arguments "${_arguments_options[@]}" \
 && ret=0
 ;;
+(upgrade)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
 (help)
 _arguments "${_arguments_options[@]}" \
 && ret=0
@@ -142,6 +160,7 @@ _roco_commands() {
 'outdated:Returns a list of outdated packages.' \
 'source:list choco sources' \
 'license:display license information' \
+'upgrade:upgrade choco packages (using choco.exe)' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'roco commands' commands "$@"
@@ -164,6 +183,7 @@ _roco__help_commands() {
 'outdated:Returns a list of outdated packages.' \
 'source:list choco sources' \
 'license:display license information' \
+'upgrade:upgrade choco packages (using choco.exe)' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'roco help commands' commands "$@"
@@ -212,6 +232,16 @@ _roco__help__source_commands() {
 _roco__source_commands() {
     local commands; commands=()
     _describe -t commands 'roco source commands' commands "$@"
+}
+(( $+functions[_roco__help__upgrade_commands] )) ||
+_roco__help__upgrade_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help upgrade commands' commands "$@"
+}
+(( $+functions[_roco__upgrade_commands] )) ||
+_roco__upgrade_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco upgrade commands' commands "$@"
 }
 
 if [ "$funcstack[1]" = "_roco" ]; then
