@@ -27,7 +27,7 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand outdated 'Returns a list of outdated packages.'
             cand source 'list choco sources'
             cand license 'display license information'
-            cand upgrade 'upgrade choco packages (using choco.exe)'
+            cand upgrade 'upgrade outdated choco packages (using choco.exe)'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;list'= {
@@ -96,7 +96,7 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand outdated 'Returns a list of outdated packages.'
             cand source 'list choco sources'
             cand license 'display license information'
-            cand upgrade 'upgrade choco packages (using choco.exe)'
+            cand upgrade 'upgrade outdated choco packages (using choco.exe)'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;help;list'= {

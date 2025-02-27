@@ -160,7 +160,7 @@ _roco_commands() {
 'outdated:Returns a list of outdated packages.' \
 'source:list choco sources' \
 'license:display license information' \
-'upgrade:upgrade choco packages (using choco.exe)' \
+'upgrade:upgrade outdated choco packages (using choco.exe)' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'roco commands' commands "$@"
@@ -183,7 +183,7 @@ _roco__help_commands() {
 'outdated:Returns a list of outdated packages.' \
 'source:list choco sources' \
 'license:display license information' \
-'upgrade:upgrade choco packages (using choco.exe)' \
+'upgrade:upgrade outdated choco packages (using choco.exe)' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'roco help commands' commands "$@"
