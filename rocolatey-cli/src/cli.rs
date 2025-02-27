@@ -92,7 +92,7 @@ pub fn build_cli() -> Command {
       )
     )
     .subcommand(
-      Command::new("upgrade").about("upgrade choco packages (using choco.exe)")
+      Command::new("upgrade").about("upgrade outdated choco packages (using choco.exe)")
         .arg(
           Arg::new("pkg")
           .default_value("all")

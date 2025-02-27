@@ -30,7 +30,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'Returns a list of outdated packages.')
             [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'list choco sources')
             [CompletionResult]::new('license', 'license', [CompletionResultType]::ParameterValue, 'display license information')
-            [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade choco packages (using choco.exe)')
+            [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -106,7 +106,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'Returns a list of outdated packages.')
             [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'list choco sources')
             [CompletionResult]::new('license', 'license', [CompletionResultType]::ParameterValue, 'display license information')
-            [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade choco packages (using choco.exe)')
+            [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
