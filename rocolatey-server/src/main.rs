@@ -18,7 +18,7 @@ async fn main() {
                 .long("port")
                 .short('p')
                 .help("Sets the port to bind to")
-                .takes_value(true)
+                .value_parser(clap::value_parser!(String))
                 .default_value("8081"),
         )
         .arg(
@@ -26,14 +26,18 @@ async fn main() {
                 .long("address")
                 .short('a')
                 .help("Sets the address to bind to")
-                .takes_value(true)
+                .value_parser(clap::value_parser!(String))
                 .default_value("127.0.0.1"),
         )
         .get_matches();
 
-    let bind_addr: &str = matches.value_of("address").unwrap_or("127.0.0.1");
+    let bind_addr: &str = matches
+        .get_one::<String>("address")
+        .map(String::as_str)
+        .unwrap_or("127.0.0.1");
     let bind_port: u16 = matches
-        .value_of("port")
+        .get_one::<String>("port")
+        .map(String::as_str)
         .unwrap_or("8081")
         .parse()
         .expect("invalid port number");
