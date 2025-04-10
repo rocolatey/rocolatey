@@ -1519,7 +1519,7 @@
     },
     {
       "package_name": "openssl",
-      "package_version": "0.10.66",
+      "package_version": "0.10.70",
       "repository": "https://github.com/sfackler/rust-openssl",
       "license": "Apache-2.0",
       "licenses": [
@@ -1531,7 +1531,7 @@
     },
     {
       "package_name": "openssl-macros",
-      "package_version": "0.1.0",
+      "package_version": "0.1.1",
       "repository": "",
       "license": "MIT/Apache-2.0",
       "licenses": [
@@ -1563,7 +1563,7 @@
     },
     {
       "package_name": "openssl-sys",
-      "package_version": "0.9.103",
+      "package_version": "0.9.105",
       "repository": "https://github.com/sfackler/rust-openssl",
       "license": "MIT",
       "licenses": [
