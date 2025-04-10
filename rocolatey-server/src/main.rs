@@ -10,7 +10,7 @@ use rocolatey_lib::roco::{
 #[tokio::main]
 async fn main() {
     let matches = Command::new("Rocolatey Server")
-        .version("0.9.2")
+        .version("0.9.3")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides web access to rocolatey-lib")
         .arg(

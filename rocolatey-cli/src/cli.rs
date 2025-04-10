@@ -23,7 +23,7 @@ pub fn build_cli() -> Command {
         .help("require https/ssl-validation");
 
     Command::new("Rocolatey")
-    .version("0.9.2")
+    .version("0.9.3")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
     .about("provides a basic interface for rocolatey-lib")
     .subcommand(
