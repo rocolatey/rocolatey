@@ -4,6 +4,10 @@ use quick_xml::Reader;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use std::fs::File;
+use std::io::Read;
+use zip::ZipArchive;
+
 use crate::println_verbose;
 use crate::roco::{
     get_choco_sources, get_chocolatey_dir, xml_attribs_to_map, Feed, NuspecTag, Package,
@@ -211,12 +215,19 @@ fn get_package_list_text(filter: &str, packages: Vec<Package>, limitoutput: bool
 }
 
 fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
-    assert_eq!(true, pkgs_path.is_file());
+    assert!(pkgs_path.is_file(), "The provided path is not a file");
+    println_verbose(&format!("parse nuspec '{}'", pkgs_path.to_str().unwrap()));
+
+    let nuspec_content = std::fs::read(pkgs_path).expect("Failed to read nuspec file");
+
+    get_package_from_nuspec_text(&nuspec_content)
+}
+
+fn get_package_from_nuspec_text(nuspec_content: &[u8]) -> Package {
     let mut pkg_name = String::new();
     let mut pkg_version = String::new();
 
-    println_verbose(&format!("parse nuspec '{}'", pkgs_path.to_str().unwrap()));
-    let mut reader = Reader::from_file(pkgs_path).expect("failed to init xml reader");
+    let mut reader = Reader::from_reader(nuspec_content);
     reader.trim_text(true);
     let mut buf = Vec::new();
     let mut tag: NuspecTag = NuspecTag::Null;
@@ -247,7 +258,7 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
                 _ => (),
             },
             Ok(Event::Text(e)) => match tag {
-                // always ensure package ids are lowercase
+                // Always ensure package IDs are lowercase
                 NuspecTag::Id => pkg_name = String::from_utf8(e.to_vec()).unwrap(),
                 NuspecTag::Version => pkg_version = String::from_utf8(e.to_vec()).unwrap(),
                 _ => (),
@@ -258,7 +269,7 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
         buf.clear();
     }
 
-    // 'pinned': $env:ChocolateyInstall\.chocolatey\<pkg_id>.<pkg_version>\.pin -> exists => true
+    // Check if the package is pinned
     let choco_dir = get_chocolatey_dir().unwrap();
     let mut pinned_file = PathBuf::from(choco_dir);
     pinned_file.push(".chocolatey");
@@ -283,27 +294,55 @@ fn get_package_from_nuspec(pkgs_path: &std::path::PathBuf) -> Package {
     }
 }
 
-fn get_package_from_nupkg(filename: &str) -> Option<Package> {
-    // println!(" .. pkg from filename: {}", filename);
+fn get_package_from_nupkg(nupkg_path: &str) -> Option<Package> {
+    let file = match File::open(nupkg_path).ok() {
+        Some(it) => it,
+        None => {
+            return get_package_from_nupkg_filename(nupkg_path);
+        }
+    };
+    let mut archive = match ZipArchive::new(file) {
+        Ok(archive) => archive,
+        Err(_) => {
+            return get_package_from_nupkg_filename(nupkg_path);
+        }
+    };
 
-    // TODO - is this sufficient? / do we need to extract the nuspec from the nupkg in order to get the id / version ?
-    // https://crates.io/crates/zip
+    let nuspec_file_name = match archive.file_names().find(|name| name.ends_with(".nuspec")) {
+        Some(name) => name.to_string(),
+        None => {
+            return get_package_from_nupkg_filename(nupkg_path);
+        }
+    };
 
+    let mut nuspec_file = match archive.by_name(&nuspec_file_name) {
+        Ok(file) => file,
+        Err(_) => {
+            return get_package_from_nupkg_filename(nupkg_path);
+        }
+    };
+    let mut nuspec_content = String::new();
+    if nuspec_file.read_to_string(&mut nuspec_content).is_err() {
+        return get_package_from_nupkg_filename(nupkg_path);
+    }
+
+    let p =  get_package_from_nuspec_text(nuspec_content.as_bytes());
+    Some(p)
+ }
+
+fn get_package_from_nupkg_filename(filename: &str) -> Option<Package> {
     let semver_regex = regex::Regex::new(r#"^(.+?)\.(((\d+\.?)+)(-.+)?)\.nupkg$"#).unwrap();
     match semver_regex.captures(filename) {
-        Some(captures) => {
-            // println!("{:#?}", captures);
-            Some(Package {
-                id: captures
-                    .get(1)
-                    .map_or(String::from(""), |m| String::from(m.as_str())),
-                version: captures
-                    .get(2)
-                    .map_or(String::from(""), |m| String::from(m.as_str())),
-                pinned: false,
-                dependencies: None,
-            })
-        }
+        Some(captures) => Some(Package {
+            id: captures
+                .get(1)
+                .map_or(String::from(""), |m| String::from(m.as_str())),
+            version: captures
+                .get(2)
+                .map_or(String::from(""), |m| String::from(m.as_str())),
+            pinned: false,
+            dependencies: None,
+        }),
         None => {
             println!("ERROR: failed to get package from filename '{}'", filename);
             None
