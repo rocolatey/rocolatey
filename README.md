@@ -4,104 +4,108 @@ Main :rocket: [![Main Branch](https://github.com/mwallner/rocolatey/actions/work
 
 Dev :rocket: [![Develop Branch](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml/badge.svg?branch=dev)](https://github.com/mwallner/rocolatey/actions/workflows/Rust-Build-Pipeline.yml)
 
-> ***What is Rocolatey?***
+> What is Rocolatey?
 
-R(ocket-fast) [Chocolatey](https://chocolatey.org/) queries.
+R(ocket-fast) [Chocolatey](https://chocolatey.org/).
 
-* mimics output of Chocolatey commands (drop-in replacement)
-* doesn't make use of Chocolatey or chocolatey.dll - just looks at the filesystem / does native API call on source feeds.
-* can be used to query Chocolatey status while `choco.exe` is running.
-* it's supposed to be _much faster_ for each command that has a Chocolatey counterpart.
+- Mimics the output of Chocolatey commands.
+- Does not use Chocolatey or `chocolatey.dll` where possible; it inspects the filesystem and uses native API calls against source feeds. (`un`/`install` and `upgrade` commands are routed to `choco.exe`.)
+- Can be used to query Chocolatey status while `choco.exe` is running.
+- It is expected to be much faster for commands that have a Chocolatey counterpart.
+- Is able to run "remotely" using `rocolatey-server.exe` (if `env:ROCO_SERVER_IP` is set when running `roco.exe`).
 
 ![roco logo](./roco.png)
 
-> ***Important Notice, March 2024***
+> Important Notice — March 2024
 
-Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages), the main performance benefit of roco when dealing with this feed is gone. - Bulk queries to this repository are not possible anymore.
-Rocolatey will still be faster than choco with CCR, although only in the `--ignore-http-cache` mode of `choco.exe`.
+Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages), the main performance benefit of Rocolatey when dealing with this feed is gone. Bulk queries to this repository are no longer possible. Rocolatey will still be faster than `choco` with the CCR, although only when `choco.exe` is used with `--ignore-http-cache`.
 
-All other NuGetV2 feeds/artifact repositories that I know of still support this feature - `roco.exe` will outperform `choco.exe` by factors on any of them, - especially interesting when you're dealing with internal feeds/ caching connectors to the community gallery.
+Most other NuGetV2 feeds and artifact repositories still support this feature — `roco.exe` will outperform `choco.exe` on those, especially for internal feeds or caching connectors to the community gallery.
 
-Due to the nature of how Chocolatey handles it's internal cache and the huge amount of wrong results Chocolatey gives when searching for outdated packages, the development of Rocolatey will be continued for the forseeable future.
+Because of how Chocolatey manages its internal cache and the incorrect results Chocolatey sometimes returns when searching for outdated packages, development of Rocolatey will continue for the foreseeable future.
 
-> ***Installing...***
+> Installing
 
-Use Chocolatey!
+Use Chocolatey:
 
-```PowerShell
+```powershell
 choco install rocolatey
 ```
 
-... or grab the latest binary from [here](https://github.com/mwallner/rocolatey/releases).
+...or grab the latest binary from the releases page: https://github.com/mwallner/rocolatey/releases
 
-> ***Why are Rocolatey queries so much faster than Chocolatey's counterparts?***
+> Why are Rocolatey queries so much faster than Chocolatey's counterparts?
 
-Rocolatey exploits some suboptimal algorithmic decisions in the original `choco.exe` (well, NuGet client library actually), it uses SAX parsers instead of reading the whole DOM of nuspec and config files, does a lot less API-calls when talking to Package repositories etc. etc.
+Rocolatey avoids some suboptimal algorithmic choices in `choco.exe` (or rather, the NuGet client library). It uses SAX-style parsing instead of loading entire XML DOMs for nuspec and config files, and it makes far fewer API calls to package repositories.
 
-> ***What can roco do for me?***
+> What can `roco` do for me?
 
-Take a look at the help (`roco -h`), basically roco allows you to [list installed packages](#roco-list), [list failed package installs](#roco-bad), [configured sources](#roco-source) and [check for updates](#roco-outdated).
-In addition to that, there may be some hidden gems that are only available in roco, but not in vanilla Chocolatey.
+See the help (`roco -h`). In short, `roco` can:
 
-Normally you should not run multiple Chocolatey instances at the same time, however this may be required in certain scenarios.
-If you wanted to check if updates are available, or simply list all configured sources, roco is there to help you out without worrying of breaking something because you accidentally called choco in parallel.
+- List installed packages (`roco list`).
+- List failed package installs (`roco bad`).
+- Show configured sources (`roco source`).
+- Check for updates (`roco outdated`).
 
-Another scenario would be when traveling or on commute: checking for outdated packages on a slow network connection with `roco.exe` works for most users where `choco.exe` would time out or simply won't work.
+There may also be additional features available in `roco` that are not present in vanilla Chocolatey.
 
-> ***seriously, why are you doing this?***
+Normally you should not run multiple Chocolatey instances at the same time, though in some scenarios this may be required. If you want to check for updates or list configured sources without invoking `choco.exe`, `roco` can help without risking conflicts from running `choco` in parallel.
 
-I've started roco as a pet-project in late 2019 because I wanted to take a stab at [Rust](https://www.rust-lang.org/) programming, and back then I spend a lot of time automating software deployments with Chocolatey.
-The more packages and feeds I added to the setup, the more time was lost on doing basic choco commands such as `choco list -lo -r`, hence I figured it would be a good idea to speed up what I call "Chocolatey queries".
+When traveling or while on a slow network connection, checking for outdated packages with `roco.exe` often succeeds where `choco.exe` may time out or fail.
 
-> ***CAN I use Rocolatey in productive environments?***
+> Why was this created?
 
-Yes.
+I started `roco` as a pet project in late 2019 to learn Rust and to speed up common Chocolatey queries. As I added more packages and feeds, basic `choco` commands became slower, so I implemented faster alternatives for the common query operations.
 
-> ***SHOULD I use Rocolatey in productive environments?***
+> Can I use Rocolatey in production?
 
-It depends. (probably yes if do a lot of outdated checks and require up-to-date (non-cached results))
-For most use-cases, I would recommend sticking to `choco.exe`.
-(note though `roco.exe` will give up-to-date results always, whereas `choco.exe` requires `--ignore-http-cache` for the same results)
+Yes — but it depends on your use case. For many situations, I recommend sticking with `choco.exe`. Note, however, that `roco.exe` provides up-to-date results by default, while `choco.exe` requires `--ignore-http-cache` to achieve the same.
 
-> ***How much faster is `roco.exe` compared to `choco.exe`?***
+> How much faster is `roco.exe` compared to `choco.exe`?
 
-It very much depends on the number of installed packages and configured feeds, generally speaking roco should always be faster than choco, except for the Chocolatey Community Gallery (starting March 2024).
-Roco becomes faster when dealing with many packages and feeds.
+Performance depends on the number of installed packages and configured feeds. Generally, `roco` should be faster than `choco`, especially when dealing with many packages and feeds. The exception is the Chocolatey Community Gallery (as noted above).
 
 ## rocolatey-cli ("roco")
 
-call using `roco.exe`, see `roco -h` for help.
+Call using `roco.exe`; see `roco -h` for help.
 
-### roco list
+### `roco list`
 
-mimics the output of `choco list -lo`, make sure to use `-r` switch in automated environments!
+Mimics the output of `choco list -lo`. Use the `-r` switch in automated environments.
 
-### roco bad
+### `roco bad`
 
-get a list of packages that failed to install.
-(basically the same as `roco list`, but look in `lib-bad/` instead of list.)
+Lists packages that failed to install (similar to `roco list`, but reads `lib-bad/`).
 
-### roco source
+### `roco source`
 
-mimics the output of `choco source list`, make sure to use `-r` switch in automated environments!
+Mimics the output of `choco source list`. Use the `-r` switch in automated environments.
 
-### roco outdated
+### `roco outdated`
 
-mimics the output of `choco outdated`, make sure to use `-r` switch in automated environments!
+Mimics the output of `choco outdated`. Use the `-r` switch in automated environments.
 
 ## rocolatey-server
 
-exposes a REST api for fetching Chocolatey package info from a host.
+**Unstable — use at your own risk**
 
-currently implemented endpoints:
+Exposes a REST API for fetching Chocolatey package information from a host.
 
-* `rocolatey/local`
-* `rocolatey/local/r`
-* `rocolatey/bad`
-* `rocolatey/bad/r`
+There is currently no authentication or encryption in place — set up a reverse proxy if you plan to use it outside your homelab.
 
-you can specify which address and port to listen to, use `-h` to display help text.
+Rocolatey-server listens on port `29295` by default (which is "ro" in hex). You can specify the address and port to listen on; use `-h` to display help.
+
+It is possible to query the server directly:
 
 ```
-GET http://127.0.0.1:8081/rocolatey/local
+GET http://roco-server-a:29295/rocolatey/local
+```
+
+Or configure the `roco` client via environment variables to point at a server instance:
+
+```pwsh
+$env:ROCO_SERVER_IP="172.42.10.101"
+$env:ROCO_SERVER_PORT="29295"
+
+roco outdated # checks for outdated packages on 172.42.10.101
 ```
