@@ -42,11 +42,16 @@ fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = PathBuf::from(out_dir).join("licenses_json.rs");
 
+    // Serialize to Rust string literals (JSON escapes) so arbitrary content
+    // (including occurrences of '"#') won't prematurely end raw string literals.
+    let json_literal = serde_json::to_string(&json_content).expect("Failed to escape JSON content");
+    let license_literal = serde_json::to_string(&license_content).expect("Failed to escape LICENSE content");
+
     fs::write(
         &dest_path,
         format!(
-            "pub static JSON_LICENSE_DATA: &str = r#\"{}\"#;\npub static ROCO_LICENSE_JSON: &str = r#\"{}\"#;",
-            json_content, license_content
+            "pub static JSON_LICENSE_DATA: &str = {};\npub static ROCO_LICENSE_JSON: &str = {};",
+            json_literal, license_literal
         ),
     )
     .expect("Failed to write licenses_json.rs");
