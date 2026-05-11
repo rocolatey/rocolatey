@@ -313,8 +313,7 @@ version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05b1b633a2115cd122d73b955eadd9916c18c8f510ec9cd1686404c60ad1c29c"
 dependencies = [
- "
- l 2.5.0",
+ "async-channel 2.5.0",
  "async-executor",
  "async-io",
  "async-lock",
