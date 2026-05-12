@@ -6,6 +6,11 @@ use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 
+#[cfg(windows)]
+static SERVICE_BIND_ADDR: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+#[cfg(windows)]
+static SERVICE_BIND_PORT: std::sync::OnceLock<u16> = std::sync::OnceLock::new();
+
 /// Redirect stdout and stderr into a logfile under the OS temporary directory.
 fn init_log_redirect() {
     // determine temp dir: on Windows use %TEMP%/%TMP%, on Unix use TMPDIR or /tmp
@@ -161,11 +166,29 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             };
 
-            // Use default binding from crate; service-specific command-line args are currently not parsed here.
-            let bind_addr = rocolatey_lib::server::get_server_ip();
-            let bind_port: u16 = rocolatey_lib::server::get_server_port()
-                .parse::<u16>()
-                .expect("invalid port number");
+            let default_bind_addr = SERVICE_BIND_ADDR
+                .get()
+                .cloned()
+                .unwrap_or_else(|| "127.0.0.1".to_string());
+            let default_bind_port = *SERVICE_BIND_PORT.get().unwrap_or(
+                &rocolatey_lib::server::ROCO_SERVER_DEFAULT_PORT
+                    .parse::<u16>()
+                    .expect("invalid default port number"),
+            );
+            let (use_env_bind_addr, env_bind_addr) = rocolatey_lib::server::get_server_ip();
+            let bind_addr = if use_env_bind_addr {
+                env_bind_addr
+            } else {
+                default_bind_addr
+            };
+            let (use_env_bind_port, env_bind_port) = rocolatey_lib::server::get_server_port();
+            let bind_port = if use_env_bind_port {
+                env_bind_port
+                    .parse::<u16>()
+                    .expect("invalid port number")
+            } else {
+                default_bind_port
+            };
 
             rt.block_on(async move {
                 let warp_filter = serverimpl::create_warp_filter();
@@ -213,6 +236,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             service_main(args);
         }
+
+        let _ = SERVICE_BIND_ADDR.set(bind_addr.to_string());
+        let _ = SERVICE_BIND_PORT.set(bind_port);
 
         match service_dispatcher::start("RocolateyServer", service_main_dispatcher) {
             Ok(()) => return Ok(()),
