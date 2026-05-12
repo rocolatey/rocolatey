@@ -89,6 +89,50 @@ pub(crate) fn build_reqwest(feed: &Feed) -> reqwest::Client {
         .unwrap()
 }
 
+async fn get_feeds() -> Vec<Feed> {
+    let inner = async move {
+        let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
+        let remote_feeds: Vec<Feed> = remote_feeds
+            .into_iter()
+            .filter(|f| f.disabled == false)
+            .collect();
+
+        println_verbose(&format!(
+            "ssl checks are {}",
+            if is_ssl_required() {
+                "required"
+            } else {
+                "disabled"
+            }
+        ));
+
+        // call feed.evaluate_feed_type() on each feed in remote_feeds (await!)
+        let tasks: Vec<_> = remote_feeds
+            .into_iter()
+            .map(|mut feed| {
+                tokio::spawn(async {
+                    // -> feed may not be reachable / get it out of the way asap.
+                    _ = feed.evaluate_feed_type().await;
+                    feed
+                })
+            })
+            .collect();
+        // await the tasks for resolve's to complete and give back our items
+        let mut feeds = vec![];
+        for task in tasks {
+            feeds.push(task.await.unwrap());
+        }
+        feeds
+    };
+
+    if tokio::runtime::Handle::try_current().is_err() {
+        let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
+        rt.block_on(inner)
+    } else {
+        inner.await
+    }
+}
+
 async fn get_latest_remote_packages_on_feed(
     pkgs: &Vec<Package>,
     feed: &Feed,
@@ -133,7 +177,45 @@ async fn get_latest_remote_packages_on_feed(
     res
 }
 
-async fn get_latest_remote_packages(
+async fn find_latest_remote_packages_on_feed(
+    search_terms: &Vec<String>,
+    feed: &Feed,
+    prerelease: bool,
+) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+    let res = match &feed.feed_type {
+        FeedType::LocalFileSystem => Err(format!(
+            "cannot search remote packages on local filesystem feed '{}'",
+            feed.url
+        ))?,
+        FeedType::NuGetV2 => {
+            let packages = nuget2::find_remote_packages(search_terms, feed, prerelease).await;
+            match packages.is_ok() {
+                true => Ok(packages.unwrap()),
+                false => Err(format!(
+                    "failed to receive packages from NuGet v2 feed '{}'",
+                    feed.url
+                ))?,
+            }
+        }
+        FeedType::NuGetV3 => {
+            let packages = nuget3::find_remote_packages(search_terms, feed, prerelease).await;
+            match packages.is_ok() {
+                true => Ok(packages.unwrap()),
+                false => Err(format!(
+                    "failed to receive packages from NuGet v3 feed '{}'",
+                    feed.url
+                ))?,
+            }
+        }
+        FeedType::Unknown => Err(format!(
+            "cannot communicate with unknown feed type, please check feed '{}'",
+            feed.name
+        ))?,
+    };
+    res
+}
+
+pub async fn get_latest_remote_packages(
     pkgs: &Vec<Package>,
     limit_output: bool,
     feeds: &Vec<Feed>,
@@ -145,41 +227,123 @@ async fn get_latest_remote_packages(
     let num_parts = std::cmp::max(2, std::cmp::min(num_threads, num_threads / feeds.len()));
     let chunk_size = (pkgs.len() + num_parts - 1) / num_parts;
 
-    let mut tasks = vec![];
-    let feeds = feeds.clone();
+    let inner = async move {
+        let mut tasks = vec![];
+        let feeds = feeds.clone();
 
-    for f in feeds {
-        for chunk in pkgs.chunks(chunk_size) {
-            let pkgs = chunk.to_vec();
-            let feed = f.clone();
-            tasks.push(tokio::spawn(async move {
-                let pkgs = get_latest_remote_packages_on_feed(&pkgs, &feed, prerelease)
-                    .await
-                    .unwrap_or_else(|e| {
-                        if !limit_output {
-                            eprintln!("failed to fetch packages: {}", e)
-                        }
-                        vec![]
-                    });
-                pkgs
-            }));
-        }
-    }
-
-    for t in tasks {
-        let pkgs = t.await.unwrap();
-        for p in pkgs {
-            let lowercase_id = p.id.to_lowercase();
-            if remote_pkgs.contains_key(&lowercase_id) {
-                let remote_version = &remote_pkgs.get(&lowercase_id).unwrap().version;
-                if !semver::is_newer(&p.version, remote_version) {
-                    continue;
-                }
+        for f in feeds {
+            for chunk in pkgs.chunks(chunk_size) {
+                let pkgs = chunk.to_vec();
+                let feed = f.clone();
+                tasks.push(tokio::spawn(async move {
+                    let pkgs = get_latest_remote_packages_on_feed(&pkgs, &feed, prerelease)
+                        .await
+                        .unwrap_or_else(|e| {
+                            if !limit_output {
+                                eprintln!("failed to fetch packages: {}", e)
+                            }
+                            vec![]
+                        });
+                    pkgs
+                }));
             }
-            remote_pkgs.insert(lowercase_id, p);
         }
+
+        for t in tasks {
+            let pkgs = t.await.unwrap();
+            for p in pkgs {
+                let lowercase_id = p.id.to_lowercase();
+                if remote_pkgs.contains_key(&lowercase_id) {
+                    let remote_version = &remote_pkgs.get(&lowercase_id).unwrap().version;
+                    if !semver::is_newer(&p.version, remote_version) {
+                        continue;
+                    }
+                }
+                remote_pkgs.insert(lowercase_id, p);
+            }
+        }
+        Ok(remote_pkgs)
+    };
+
+    if tokio::runtime::Handle::try_current().is_err() {
+        let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
+        rt.block_on(inner)
+    } else {
+        inner.await
     }
-    Ok(remote_pkgs)
+}
+
+pub async fn find_latest_remote_packages(
+    search_terms: &Vec<String>,
+    limit_output: bool,
+    feeds: &Vec<Feed>,
+    prerelease: bool,
+) -> Result<HashMap<String, Package>, Box<dyn std::error::Error>> {
+    let mut remote_pkgs: HashMap<String, Package> = HashMap::new();
+
+    let num_threads = num_cpus::get();
+    let num_parts = std::cmp::max(2, std::cmp::min(num_threads, num_threads / feeds.len()));
+    let chunk_size = (search_terms.len() + num_parts - 1) / num_parts;
+
+    let inner = async move {
+        let mut tasks = vec![];
+        let feeds = feeds.clone();
+
+        for f in feeds {
+            for chunk in search_terms.chunks(chunk_size) {
+                let terms: Vec<String> = chunk.to_vec();
+                let feed = f.clone();
+                tasks.push(tokio::spawn(async move {
+                    let terms = terms;
+                    let feed = feed;
+                    let pkgs: Vec<Package> = find_latest_remote_packages_on_feed(&terms, &feed, prerelease)
+                        .await
+                        .unwrap_or_else(|e| {
+                            if !limit_output {
+                                eprintln!("failed to fetch packages: {}", e)
+                            }
+                            vec![]
+                        });
+                    pkgs
+                }));
+            }
+        }
+
+        for t in tasks {
+            let pkgs = t.await.unwrap();
+            for p in pkgs {
+                let lowercase_id = p.id.to_lowercase();
+                if remote_pkgs.contains_key(&lowercase_id) {
+                    let remote_version = &remote_pkgs.get(&lowercase_id).unwrap().version;
+                    if !semver::is_newer(&p.version, remote_version) {
+                        continue;
+                    }
+                }
+                remote_pkgs.insert(lowercase_id, p);
+            }
+        }
+        Ok(remote_pkgs)
+    };
+
+    if tokio::runtime::Handle::try_current().is_err() {
+        let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
+        rt.block_on(inner)
+    } else {
+        inner.await
+    }
+}
+
+pub async fn find_packages(
+    pkg_ids: &Vec<&str>,
+    limit_output: bool,
+    prerelease: bool,
+) -> Result<HashMap<String, Package>, Box<dyn std::error::Error>> {
+    let terms: Vec<String> = pkg_ids.iter().map(|s| s.to_string()).collect();
+
+    let found_pkgs =
+        find_latest_remote_packages(&terms, limit_output, &get_feeds().await, prerelease).await?;
+
+    Ok(found_pkgs)
 }
 
 pub async fn get_outdated_packages(
@@ -190,52 +354,16 @@ pub async fn get_outdated_packages(
     ignore_unfound: bool,
 ) -> (i32, Vec<OutdatedInfo>) {
     // foreach local package, compare remote version number
-    let mut local_packages = local::get_local_packages().expect("failed to get local package list");
-    if "all" != pkg {
-        local_packages = local_packages
-            .into_iter()
-            .filter(|p| p.id() == pkg)
-            .collect();
-        if local_packages.len() == 0 {
-            panic!("package '{}' not present in local packages.", pkg);
-        }
-    }
-    let remote_feeds = get_choco_sources().expect("failed to get choco feeds");
-    let remote_feeds: Vec<Feed> = remote_feeds
-        .into_iter()
-        .filter(|f| f.disabled == false)
-        .collect();
+    let (local_packages, _) =
+        local::get_local_packages(pkg).expect("failed to get local package list");
 
-    println_verbose(&format!(
-        "ssl checks are {}",
-        if is_ssl_required() {
-            "required"
-        } else {
-            "disabled"
-        }
-    ));
-
-    // call feed.evaluate_feed_type() on each feed in remote_feeds (await!)
-    let tasks: Vec<_> = remote_feeds
-        .into_iter()
-        .map(|mut feed| {
-            tokio::spawn(async {
-                // TODO: implement error handling
-                // -> feed may not be reachable / get it out of the way asap.
-                _ = feed.evaluate_feed_type().await;
-                feed
-            })
-        })
-        .collect();
-    // await the tasks for resolve's to complete and give back our items
-    let mut feeds = vec![];
-    for task in tasks {
-        feeds.push(task.await.unwrap());
+    if local_packages.is_empty() {
+        return (0, Vec::new());
     }
-    let remote_feeds = feeds;
+    let feeds = get_feeds().await;
 
     let latest_packages =
-        get_latest_remote_packages(&local_packages, limit_output, &remote_feeds, prerelease)
+        get_latest_remote_packages(&local_packages, limit_output, &feeds, prerelease)
             .await
             .expect("failed to get remote package list");
 

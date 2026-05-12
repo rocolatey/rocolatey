@@ -45,6 +45,12 @@ fn normalize_license(license: &str) -> String {
 }
 
 pub fn license(matches: &clap::ArgMatches) {
+    let json = matches.get_flag("json-output");
+    if json {
+        println!("{}", JSON_LICENSE_DATA);
+        return;
+    }
+
     println!("Rocolatey is licensed under the {}", ROCO_LICENSE_JSON);
     println!("------------------------------------------------");
     println!(" Rocolatey is built using the following crates: ");

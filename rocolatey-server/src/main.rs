@@ -1,16 +1,65 @@
-use warp::Filter;
-extern crate clap;
 use clap::{Arg, Command};
+mod serverimpl;
 
-use rocolatey_lib::roco::{
-    local::{get_local_bad_packages_text, get_local_packages_text},
-    remote::get_outdated_packages_text,
-};
+use std::env;
+use std::error::Error;
+use std::fs::OpenOptions;
+use std::path::PathBuf;
 
-#[tokio::main]
-async fn main() {
-    let matches = Command::new("Rocolatey Server")
-        .version("0.9.3")
+#[cfg(windows)]
+static SERVICE_BIND_ADDR: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+#[cfg(windows)]
+static SERVICE_BIND_PORT: std::sync::OnceLock<u16> = std::sync::OnceLock::new();
+
+/// Redirect stdout and stderr into a logfile under the OS temporary directory.
+fn init_log_redirect() {
+    // determine temp dir: on Windows use %TEMP%/%TMP%, on Unix use TMPDIR or /tmp
+    let mut temp = env::var_os("TEMP").or_else(|| env::var_os("TMP"));
+    if temp.is_none() {
+        temp = env::var_os("TMPDIR");
+    }
+    let temp = temp
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("/tmp"));
+    let log_path = temp.join("rocolatey-server.log");
+
+    if let Ok(file) = OpenOptions::new().create(true).append(true).open(&log_path) {
+        #[cfg(unix)]
+        {
+            use std::os::unix::io::AsRawFd;
+            let fd = file.as_raw_fd();
+            unsafe {
+                libc::dup2(fd, libc::STDOUT_FILENO);
+                libc::dup2(fd, libc::STDERR_FILENO);
+            }
+            // keep file alive? after dup2 it's fine to drop file
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::io::AsRawHandle;
+            use windows_sys::Win32::System::Console::{
+                SetStdHandle, STD_ERROR_HANDLE, STD_OUTPUT_HANDLE,
+            };
+
+            let handle = file.as_raw_handle();
+            unsafe {
+                SetStdHandle(STD_OUTPUT_HANDLE, handle);
+                SetStdHandle(STD_ERROR_HANDLE, handle);
+            }
+            // avoid closing the file when `file` is dropped — leak it intentionally so OS keeps handle
+            std::mem::forget(file);
+        }
+    } else {
+        // best effort; if opening file fails we silently continue to console
+    }
+}
+
+fn build_cli() -> Command {
+    let default_port = rocolatey_lib::server::ROCO_SERVER_DEFAULT_PORT;
+
+    Command::new("Rocolatey Server")
+        .version("0.9.5")
         .author("Manfred Wallner <schusterfredl@mwallner.net>")
         .about("provides web access to rocolatey-lib")
         .arg(
@@ -19,7 +68,7 @@ async fn main() {
                 .short('p')
                 .help("Sets the port to bind to")
                 .value_parser(clap::value_parser!(String))
-                .default_value("8081"),
+                .default_value(default_port),
         )
         .arg(
             Arg::new("address")
@@ -29,8 +78,24 @@ async fn main() {
                 .value_parser(clap::value_parser!(String))
                 .default_value("127.0.0.1"),
         )
-        .get_matches();
+}
 
+async fn run_server(bind_addr: &str, bind_port: u16) {
+    println!(" server binds on ip: {}", bind_addr);
+    println!(" server binds on port: {}", bind_port);
+
+    let warp_filter = serverimpl::create_warp_filter();
+    let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
+    warp::serve(warp_filter).run((server_ip, bind_port)).await;
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    // redirect all stdout/stderr to logfile
+    init_log_redirect();
+
+    let matches = build_cli().get_matches();
+
+    let default_port = rocolatey_lib::server::ROCO_SERVER_DEFAULT_PORT;
     let bind_addr: &str = matches
         .get_one::<String>("address")
         .map(String::as_str)
@@ -38,144 +103,164 @@ async fn main() {
     let bind_port: u16 = matches
         .get_one::<String>("port")
         .map(String::as_str)
-        .unwrap_or("8081")
+        .unwrap_or(default_port)
         .parse()
         .expect("invalid port number");
 
-    println!(" server binds on ip: {}", bind_addr);
-    println!(" server binds on port: {}", bind_port);
+    // If the user asked to run as service on Windows, dispatch to the service subsystem.
+    #[cfg(windows)]
+    {
+        use std::ffi::OsString;
+        use windows_service::service_dispatcher;
 
-    let warp_filter = create_warp_filter();
-    let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
-    warp::serve(warp_filter).run((server_ip, bind_port)).await;
-}
+        // Service entry — the service framework will call our `service_main` function.
+        fn service_main(_arguments: Vec<OsString>) {
+            use std::sync::{
+                atomic::{AtomicBool, Ordering},
+                Arc,
+            };
+            use std::time::Duration;
+            use windows_service::service::{ServiceControl, ServiceState, ServiceStatus};
+            use windows_service::service_control_handler::{self, ServiceControlHandlerResult};
 
-fn create_warp_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
-{
-    let api_base = warp::path("rocolatey");
+            let running = Arc::new(AtomicBool::new(true));
+            let running_clone = running.clone();
 
-    let local = api_base
-        .and(warp::path("local"))
-        .and(warp::path::end())
-        .map(|| req_local(false));
+            let status_handle =
+                match service_control_handler::register("RocolateyServer", move |control_event| {
+                    match control_event {
+                        ServiceControl::Stop => {
+                            running_clone.store(false, Ordering::SeqCst);
+                            ServiceControlHandlerResult::NoError
+                        }
+                        _ => ServiceControlHandlerResult::NotImplemented,
+                    }
+                }) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        eprintln!("service handler registration failed: {:?}", e);
+                        return;
+                    }
+                };
 
-    let local_r = api_base
-        .and(warp::path!("local" / "r"))
-        .and(warp::path::end())
-        .map(|| req_local(true));
+            // update status to running
+            let _ = status_handle.set_service_status(ServiceStatus {
+                service_type: windows_service::service::ServiceType::OWN_PROCESS,
+                current_state: ServiceState::Running,
+                controls_accepted: windows_service::service::ServiceControlAccept::STOP,
+                exit_code: windows_service::service::ServiceExitCode::Win32(0),
+                checkpoint: 0,
+                wait_hint: Duration::from_secs(1),
+                process_id: Some(std::process::id()),
+            });
 
-    let bad = api_base
-        .and(warp::path("bad"))
-        .and(warp::path::end())
-        .map(|| req_local_bad(false));
+            // Build a runtime and run the server until the stop signal is received.
+            let rt = match tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("failed to build tokio runtime: {:?}", e);
+                    return;
+                }
+            };
 
-    let bad_r = api_base
-        .and(warp::path!("bad" / "r"))
-        .and(warp::path::end())
-        .map(|| req_local_bad(true));
-
-    let outdated = api_base
-        .and(warp::path("outdated"))
-        .and(warp::path::end())
-        .and_then(|| req_outdated(false));
-
-    let outdated_r = api_base
-        .and(warp::path!("outdated" / "r"))
-        .and(warp::path::end())
-        .and_then(|| req_outdated(true));
-
-    let routes = local
-        .or(local_r)
-        .or(bad)
-        .or(bad_r)
-        .or(outdated)
-        .or(outdated_r);
-
-    routes
-        .with(warp::log::custom(|info| {
-            println!(
-                "Received request: {} {} from {}",
-                info.method(),
-                info.path(),
-                info.remote_addr()
-                    .map(|addr| addr.to_string())
-                    .unwrap_or_else(|| "unknown".to_string())
+            let default_bind_addr = SERVICE_BIND_ADDR
+                .get()
+                .cloned()
+                .unwrap_or_else(|| "127.0.0.1".to_string());
+            let default_bind_port = *SERVICE_BIND_PORT.get().unwrap_or(
+                &rocolatey_lib::server::ROCO_SERVER_DEFAULT_PORT
+                    .parse::<u16>()
+                    .expect("invalid default port number"),
             );
-        }))
-        .with(warp::log("rocolatey_server"))
-}
+            let (use_env_bind_addr, env_bind_addr) = rocolatey_lib::server::get_server_ip();
+            let bind_addr = if use_env_bind_addr {
+                env_bind_addr
+            } else {
+                default_bind_addr
+            };
+            let (use_env_bind_port, env_bind_port) = rocolatey_lib::server::get_server_port();
+            let bind_port = if use_env_bind_port {
+                env_bind_port
+                    .parse::<u16>()
+                    .expect("invalid port number")
+            } else {
+                default_bind_port
+            };
 
-fn req_local(limitoutput: bool) -> String {
-    get_local_packages_text("all", limitoutput)
-}
+            rt.block_on(async move {
+                let warp_filter = serverimpl::create_warp_filter();
+                let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
+                let socket_addr =
+                    std::net::SocketAddr::new(std::net::IpAddr::V4(server_ip), bind_port);
+                let (_addr, server_future) =
+                    warp::serve(warp_filter).bind_with_graceful_shutdown(socket_addr, async move {
+                        while running.load(Ordering::SeqCst) {
+                            tokio::time::sleep(Duration::from_millis(200)).await;
+                        }
+                    });
+                server_future.await;
+            });
+        }
 
-fn req_local_bad(limitoutput: bool) -> String {
-    get_local_bad_packages_text(limitoutput)
-}
+        // start service dispatcher (this call will block and transfer control to SCM)
+        extern "system" fn service_main_dispatcher(argc: u32, argv: *mut *mut u16) {
+            use std::ffi::OsString;
+            use std::os::windows::ffi::OsStringExt;
 
-async fn req_outdated(limit_output: bool) -> Result<impl warp::Reply, warp::Rejection> {
-    let result = get_outdated_packages_text("all", limit_output, false, false, true, true).await;
-    Ok(result)
-}
+            let mut args: Vec<OsString> = Vec::new();
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use warp::test::request;
+            if argv.is_null() {
+                // no arguments passed; call the Rust service entry
+                service_main(args);
+                return;
+            }
 
-    #[tokio::test]
-    async fn test_local_endpoint() {
-        let warp_filter = create_warp_filter();
+            unsafe {
+                for i in 0..(argc as isize) {
+                    let ptr = *argv.offset(i);
+                    if ptr.is_null() {
+                        args.push(OsString::new());
+                        continue;
+                    }
+                    let mut len: usize = 0;
+                    while *ptr.add(len) != 0 {
+                        len += 1;
+                    }
+                    let slice = std::slice::from_raw_parts(ptr, len);
+                    args.push(OsString::from_wide(slice));
+                }
+            }
 
-        let response = request()
-            .method("GET")
-            .path("/rocolatey/local")
-            .reply(&warp_filter)
-            .await;
+            service_main(args);
+        }
 
-        assert_eq!(response.status(), 200);
-        // assert!(std::str::from_utf8(response.body()).unwrap().contains("local packages"));
+        let _ = SERVICE_BIND_ADDR.set(bind_addr.to_string());
+        let _ = SERVICE_BIND_PORT.set(bind_port);
+
+        match service_dispatcher::start("RocolateyServer", service_main_dispatcher) {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                eprintln!(
+                    "service_dispatcher failed: {:?}. Falling back to foreground run.",
+                    e
+                );
+            }
+        }
+
+        #[cfg(not(windows))]
+        {
+            println!("--service ignored on non-Windows platforms; running in foreground instead");
+        }
     }
 
-    #[tokio::test]
-    async fn test_bad_endpoint() {
-        let warp_filter = create_warp_filter();
+    // Normal foreground run
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+    rt.block_on(run_server(bind_addr, bind_port));
 
-        let response = request()
-            .method("GET")
-            .path("/rocolatey/bad")
-            .reply(&warp_filter)
-            .await;
-
-        assert_eq!(response.status(), 200);
-        // assert!(std::str::from_utf8(response.body()).unwrap().contains("bad packages"));
-    }
-
-    #[tokio::test]
-    async fn test_outdated_endpoint() {
-        let warp_filter = create_warp_filter();
-
-        let response = request()
-            .method("GET")
-            .path("/rocolatey/outdated")
-            .reply(&warp_filter)
-            .await;
-
-        assert_eq!(response.status(), 200);
-        // assert!(std::str::from_utf8(response.body()).unwrap().contains("outdated packages"));
-    }
-
-    #[tokio::test]
-    async fn test_unmatched_endpoint() {
-        let warp_filter = create_warp_filter();
-
-        let response = request()
-            .method("GET")
-            .path("/rocolatey/unknown")
-            .reply(&warp_filter)
-            .await;
-
-        assert_eq!(response.status(), 404);
-        // assert!(std::str::from_utf8(response.body()).unwrap().contains("Not Found"));
-    }
+    Ok(())
 }

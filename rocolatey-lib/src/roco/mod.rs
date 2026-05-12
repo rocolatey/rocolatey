@@ -1,8 +1,10 @@
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+pub mod roco_server;
 pub mod local;
 pub mod nuget2;
 pub mod nuget3;
@@ -10,7 +12,7 @@ pub mod remote;
 pub mod semver;
 use crate::println_verbose;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum NuspecTag {
     Null,
     Id,
@@ -18,7 +20,7 @@ pub enum NuspecTag {
     Dependency,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq)]
 pub enum FeedType {
     Unknown,
     LocalFileSystem,
@@ -26,7 +28,7 @@ pub enum FeedType {
     NuGetV3,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Package {
     pub id: String,
     pub version: String,
@@ -35,6 +37,14 @@ pub struct Package {
 }
 
 impl Package {
+    pub fn new(id: &str) -> Self {
+        Package {
+            id: id.to_string(),
+            version: String::new(),
+            pinned: false,
+            dependencies: None,
+        }
+    }
     // access all the members via getters (immutable refs + copies only)
     pub fn id(&self) -> &str {
         &self.id
@@ -47,7 +57,7 @@ impl Package {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Feed {
     pub name: String,
     pub url: String,
@@ -63,19 +73,19 @@ pub struct Feed {
     pub service_index: Option<nuget3::NuGetV3Index>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Credential {
     pub user: String,
     pub pass: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ProxySettings {
     pub url: String,
     pub credential: Option<Credential>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct OutdatedInfo {
     pub id: String,
     pub local_version: String,
@@ -181,7 +191,7 @@ fn get_chocolatey_dir() -> Result<String, std::env::VarError> {
     }
 }
 
-fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
+pub fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     let mut sources = Vec::new();
     let choco_dir = get_chocolatey_dir().expect("failed to get choco dir");
     let mut cfg_dir = PathBuf::from(choco_dir);

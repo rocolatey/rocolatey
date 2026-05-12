@@ -1,14 +1,15 @@
 [package]
 license = "MIT"
 name = "roco"
-version = "0.9.3"
+version = "0.9.5"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 rocolatey-lib = { path = "../rocolatey-lib" }
+
 tokio = { version = "1.38.2", features = ["full"] }
 clap = "4.4.14"
 serde = { version = "1.0", features = ["derive"] }
@@ -17,6 +18,7 @@ serde_json = "1.0"
 [build-dependencies]
 clap = "4.4.14"
 clap_complete = "4.4.6"
+serde_json = "1.0"
 
 [dev-dependencies]
 assert_cmd = "2.0"

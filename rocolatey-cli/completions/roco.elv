@@ -26,13 +26,17 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand bad 'list packages in lib-bad/'
             cand outdated 'Returns a list of outdated packages.'
             cand source 'list choco sources'
+            cand search 'search for packages'
             cand license 'display license information'
             cand upgrade 'upgrade outdated choco packages (using choco.exe)'
+            cand install 'install choco packages (using choco.exe)'
+            cand uninstall 'uninstall choco packages (using choco.exe)'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;list'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
+            cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
             cand --dependency-tree 'list dependencies'
@@ -42,23 +46,22 @@ set edit:completion:arg-completer[roco] = {|@words|
         &'roco;bad'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
+            cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'roco;outdated'= {
-            cand --choco-mode 'enables ''ignore-pinned'' and ''ignore-unfound'' 
-(otherwise they are true by default, even if not set)'
-            cand --ignore-pinned 'ignore any pinned packages 
-(default, unless ''choco-mode'' is set)'
-            cand --ignore-unfound 'ignore any unfound packages 
-(default, unless ''choco-mode'' is set)'
+            cand --choco-mode 'enables ''ignore-pinned'' and ''ignore-unfound''  (otherwise they are true by default, even if not set)'
+            cand --ignore-pinned 'ignore any pinned packages  (default, unless ''choco-mode'' is set)'
+            cand --ignore-unfound 'ignore any unfound packages  (default, unless ''choco-mode'' is set)'
             cand -l 'output a whitespace-separated list of results'
             cand -p 'include prerelease versions'
             cand --pre 'include prerelease versions'
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
+            cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
             cand --sslcheck 'require https/ssl-validation'
@@ -68,6 +71,16 @@ set edit:completion:arg-completer[roco] = {|@words|
         &'roco;source'= {
             cand -r 'limit the output to essential information'
             cand --limitoutput 'limit the output to essential information'
+            cand --json 'output results in JSON format'
+            cand -v 'be verbose'
+            cand --verbose 'be verbose'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
+        &'roco;search'= {
+            cand -r 'limit the output to essential information'
+            cand --limitoutput 'limit the output to essential information'
+            cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
             cand -h 'Print help'
@@ -76,6 +89,7 @@ set edit:completion:arg-completer[roco] = {|@words|
         &'roco;license'= {
             cand -f 'display full license information'
             cand --full 'display full license information'
+            cand --json 'output results in JSON format'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -90,13 +104,35 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
+        &'roco;install'= {
+            cand -p 'include prerelease versions'
+            cand --pre 'include prerelease versions'
+            cand -r 'limit the output to essential information'
+            cand --limitoutput 'limit the output to essential information'
+            cand -v 'be verbose'
+            cand --verbose 'be verbose'
+            cand --sslcheck 'require https/ssl-validation'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
+        &'roco;uninstall'= {
+            cand -r 'limit the output to essential information'
+            cand --limitoutput 'limit the output to essential information'
+            cand -v 'be verbose'
+            cand --verbose 'be verbose'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
         &'roco;help'= {
             cand list 'list local installed packages'
             cand bad 'list packages in lib-bad/'
             cand outdated 'Returns a list of outdated packages.'
             cand source 'list choco sources'
+            cand search 'search for packages'
             cand license 'display license information'
             cand upgrade 'upgrade outdated choco packages (using choco.exe)'
+            cand install 'install choco packages (using choco.exe)'
+            cand uninstall 'uninstall choco packages (using choco.exe)'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;help;list'= {
@@ -107,9 +143,15 @@ set edit:completion:arg-completer[roco] = {|@words|
         }
         &'roco;help;source'= {
         }
+        &'roco;help;search'= {
+        }
         &'roco;help;license'= {
         }
         &'roco;help;upgrade'= {
+        }
+        &'roco;help;install'= {
+        }
+        &'roco;help;uninstall'= {
         }
         &'roco;help;help'= {
         }

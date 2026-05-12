@@ -1,8 +1,6 @@
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [workspace]
 
-members = [
-    "rocolatey-lib",
-    "rocolatey-cli",
-    "rocolatey-server",
-]
+resolver = "2"
+
+members = ["rocolatey-lib", "rocolatey-cli", "rocolatey-server", "roco-latte"]

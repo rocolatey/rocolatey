@@ -1,4 +1,6 @@
 .vscode
+.vagrant
+Vagrantfile
 /target
 **/*.rs.bk
 *.nupkg
