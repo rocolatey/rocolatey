@@ -146,16 +146,12 @@ pub(crate) fn create_warp_filter(
         .and(warp::path!("outdated" / "json"))
         .and(warp::path::end())
         .and(warp::get())
-        .map(|| match get_outdated_packages() {
-            Ok(data) => warp::reply::json(&RocoServerPackagesResponse {
+        .and_then(|| async move {
+            let (_, data) = get_outdated_packages("all", false, false, true, true).await;
+            Ok::<_, warp::Rejection>(warp::reply::json(&RocoServerOutdatedResponse {
                 schema_version: ROCO_SERVER_SCHEMA_VERSION,
-                total_count: Some(data.len()),
                 data,
-            }),
-            Err(err) => {
-                let body = serde_json::json!({ "error": format!("Error: {}", err) });
-                warp::reply::json(&body)
-            }
+            }))
         })
         .or(api_base
             .and(warp::path!("outdated" / "json"))
