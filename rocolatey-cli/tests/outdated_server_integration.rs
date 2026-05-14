@@ -104,27 +104,33 @@ fn prepare_fake_chocolatey_home() -> PathBuf {
     home
 }
 
-fn start_server(port: u16, chocolatey_home: &Path) -> Child {
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+fn server_binary_path() -> PathBuf {
+    // Derive the path to the pre-compiled rocolatey-server binary.
+    // Using the binary directly (instead of `cargo run`) avoids contention on
+    // Cargo's global file-lock when several test threads start servers in parallel.
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    let target_dir = std::env::var_os("CARGO_TARGET_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| workspace_root.join("target"))
+        .join("debug");
 
-    Command::new("cargo")
-        .current_dir(&repo_root)
+    let binary_name = if cfg!(windows) {
+        "rocolatey-server.exe"
+    } else {
+        "rocolatey-server"
+    };
+
+    target_dir.join(binary_name)
+}
+
+fn start_server(port: u16, chocolatey_home: &Path) -> Child {
+    Command::new(server_binary_path())
         .env("ChocolateyInstall", chocolatey_home)
-        .args([
-            "run",
-            "--quiet",
-            "-p",
-            "rocolatey-server",
-            "--",
-            "--address",
-            "127.0.0.1",
-            "--port",
-            &port.to_string(),
-        ])
+        .args(["--address", "127.0.0.1", "--port", &port.to_string()])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("failed to start rocolatey-server with cargo run")
+        .expect("failed to start rocolatey-server")
 }
 
 fn run_roco(args: &[&str], chocolatey_home: &Path, port: Option<u16>) -> Output {
