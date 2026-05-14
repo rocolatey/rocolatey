@@ -1,8 +1,9 @@
-use std::cell::Cell;
 use std::io::IsTerminal;
+use std::sync::atomic::{AtomicU8, Ordering};
 use owo_colors::OwoColorize;
 
 /// Controls whether ANSI color codes are emitted.
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ColorMode {
     /// Emit colors only when stdout is a TTY that supports them.
@@ -30,23 +31,31 @@ impl ColorMode {
 }
 
 // ---------------------------------------------------------------------------
-// Process-wide active mode (set once at startup by main.rs)
+// Process-wide active mode (set at startup by main.rs)
 // ---------------------------------------------------------------------------
 
-thread_local! {
-    static ACTIVE_MODE: Cell<ColorMode> = const { Cell::new(ColorMode::Auto) };
+static ACTIVE_MODE: AtomicU8 = AtomicU8::new(ColorMode::Auto as u8);
+
+impl ColorMode {
+    fn from_repr(value: u8) -> Self {
+        match value {
+            x if x == ColorMode::Always as u8 => ColorMode::Always,
+            x if x == ColorMode::Never as u8 => ColorMode::Never,
+            _ => ColorMode::Auto,
+        }
+    }
 }
 
-/// Set the process-wide color mode.  Call this once in `main` before
+/// Set the process-wide color mode.  Call this in `main` before
 /// dispatching any subcommand.
 pub fn init(mode: ColorMode) {
-    ACTIVE_MODE.with(|m| m.set(mode));
+    ACTIVE_MODE.store(mode as u8, Ordering::Release);
 }
 
 /// Return the process-wide color mode set by [`init`].
 /// Command handlers call this to respect the user's `--color` flag.
 pub fn current() -> ColorMode {
-    ACTIVE_MODE.with(|m| m.get())
+    ColorMode::from_repr(ACTIVE_MODE.load(Ordering::Acquire))
 }
 
 // ---------------------------------------------------------------------------
@@ -200,5 +209,15 @@ mod tests {
     fn never_mode_disabled_independent_of_tty() {
         assert!(!ColorMode::Never.is_enabled_for_tty(true));
         assert!(!ColorMode::Never.is_enabled_for_tty(false));
+    }
+
+    #[test]
+    fn current_mode_is_visible_across_threads() {
+        init(ColorMode::Always);
+
+        let mode = std::thread::spawn(current).join().unwrap();
+
+        assert_eq!(mode, ColorMode::Always);
+        init(ColorMode::Auto);
     }
 }
