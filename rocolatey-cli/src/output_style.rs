@@ -38,9 +38,12 @@ static ACTIVE_MODE: AtomicU8 = AtomicU8::new(ColorMode::Auto as u8);
 
 impl ColorMode {
     fn from_repr(value: u8) -> Self {
+        const ALWAYS_REPR: u8 = ColorMode::Always as u8;
+        const NEVER_REPR: u8 = ColorMode::Never as u8;
+
         match value {
-            x if x == ColorMode::Always as u8 => ColorMode::Always,
-            x if x == ColorMode::Never as u8 => ColorMode::Never,
+            ALWAYS_REPR => ColorMode::Always,
+            NEVER_REPR => ColorMode::Never,
             _ => ColorMode::Auto,
         }
     }
@@ -219,5 +222,6 @@ mod tests {
 
         assert_eq!(mode, ColorMode::Always);
         init(ColorMode::Auto);
+        assert_eq!(current(), ColorMode::Auto);
     }
 }
