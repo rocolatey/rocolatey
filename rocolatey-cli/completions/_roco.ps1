@@ -21,6 +21,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
 
     $completions = @(switch ($command) {
         'roco' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
@@ -38,8 +39,9 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;list' {
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
@@ -49,8 +51,9 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;bad' {
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
@@ -59,14 +62,15 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;outdated' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
             [CompletionResult]::new('--choco-mode', '--choco-mode', [CompletionResultType]::ParameterName, 'enables ''ignore-pinned'' and ''ignore-unfound''  (otherwise they are true by default, even if not set)')
             [CompletionResult]::new('--ignore-pinned', '--ignore-pinned', [CompletionResultType]::ParameterName, 'ignore any pinned packages  (default, unless ''choco-mode'' is set)')
             [CompletionResult]::new('--ignore-unfound', '--ignore-unfound', [CompletionResultType]::ParameterName, 'ignore any unfound packages  (default, unless ''choco-mode'' is set)')
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'output a whitespace-separated list of results')
             [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'include prerelease versions')
             [CompletionResult]::new('--pre', '--pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
@@ -76,8 +80,9 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;source' {
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
@@ -86,8 +91,9 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;search' {
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
@@ -96,6 +102,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;license' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
             [CompletionResult]::new('-f', '-f', [CompletionResultType]::ParameterName, 'display full license information')
             [CompletionResult]::new('--full', '--full', [CompletionResultType]::ParameterName, 'display full license information')
             [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
@@ -104,10 +111,11 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;upgrade' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
             [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'include prerelease versions')
             [CompletionResult]::new('--pre', '--pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--sslcheck', '--sslcheck', [CompletionResultType]::ParameterName, 'require https/ssl-validation')
@@ -116,10 +124,11 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;install' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
             [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'include prerelease versions')
             [CompletionResult]::new('--pre', '--pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--sslcheck', '--sslcheck', [CompletionResultType]::ParameterName, 'require https/ssl-validation')
@@ -128,8 +137,9 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;uninstall' {
-            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
             [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')

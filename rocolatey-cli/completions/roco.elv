@@ -18,6 +18,7 @@ set edit:completion:arg-completer[roco] = {|@words|
     }
     var completions = [
         &'roco'= {
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
             cand -h 'Print help'
             cand --help 'Print help'
             cand -V 'Print version'
@@ -34,8 +35,9 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;list'= {
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
@@ -44,8 +46,9 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;bad'= {
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
@@ -53,14 +56,15 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;outdated'= {
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
             cand --choco-mode 'enables ''ignore-pinned'' and ''ignore-unfound''  (otherwise they are true by default, even if not set)'
             cand --ignore-pinned 'ignore any pinned packages  (default, unless ''choco-mode'' is set)'
             cand --ignore-unfound 'ignore any unfound packages  (default, unless ''choco-mode'' is set)'
             cand -l 'output a whitespace-separated list of results'
             cand -p 'include prerelease versions'
             cand --pre 'include prerelease versions'
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
@@ -69,8 +73,9 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;source'= {
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
@@ -78,8 +83,9 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;search'= {
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand --json 'output results in JSON format'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
@@ -87,6 +93,7 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;license'= {
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
             cand -f 'display full license information'
             cand --full 'display full license information'
             cand --json 'output results in JSON format'
@@ -94,10 +101,11 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;upgrade'= {
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
             cand -p 'include prerelease versions'
             cand --pre 'include prerelease versions'
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
             cand --sslcheck 'require https/ssl-validation'
@@ -105,10 +113,11 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;install'= {
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
             cand -p 'include prerelease versions'
             cand --pre 'include prerelease versions'
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
             cand --sslcheck 'require https/ssl-validation'
@@ -116,8 +125,9 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand --help 'Print help'
         }
         &'roco;uninstall'= {
-            cand -r 'limit the output to essential information'
-            cand --limitoutput 'limit the output to essential information'
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
+            cand -r 'limit output to essential information (automation-safe, no ANSI colors)'
+            cand --limitoutput 'limit output to essential information (automation-safe, no ANSI colors)'
             cand -v 'be verbose'
             cand --verbose 'be verbose'
             cand -h 'Print help'

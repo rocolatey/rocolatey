@@ -12,6 +12,7 @@ use crate::println_verbose;
 use crate::roco::{
     get_choco_sources, get_chocolatey_dir, xml_attribs_to_map, Feed, NuspecTag, Package,
 };
+use crate::server::DependencyTreeNode;
 
 pub fn get_local_packages(
     filter: &str,
@@ -92,6 +93,43 @@ fn get_dependency_tree_pkg_text(
     res
 }
 
+fn collect_dependency_tree_pkg_nodes(
+    level: usize,
+    pkg: &Package,
+    packages: &HashMap<String, &Package>,
+    nodes: &mut Vec<DependencyTreeNode>,
+) {
+    if level == 1 {
+        nodes.push(DependencyTreeNode {
+            id: pkg.id.clone(),
+            version: pkg.version.clone(),
+            depth: 0,
+            parent_id: None,
+            missing: false,
+        });
+    }
+
+    if let Some(dependencies) = &pkg.dependencies {
+        for dependency in dependencies {
+            let child_parent_id = Some(pkg.id.clone());
+            let package = packages.get(&dependency.id.to_lowercase());
+            let resolved = package.is_some();
+
+            nodes.push(DependencyTreeNode {
+                id: dependency.id.clone(),
+                version: dependency.version.clone(),
+                depth: level,
+                parent_id: child_parent_id.clone(),
+                missing: !resolved,
+            });
+
+            if let Some(child_pkg) = package {
+                collect_dependency_tree_pkg_nodes(level + 1, child_pkg, packages, nodes);
+            }
+        }
+    }
+}
+
 pub fn get_dependency_tree_text(filter: &str) -> String {
     let mut res = String::new();
 
@@ -114,6 +152,26 @@ pub fn get_dependency_tree_text(filter: &str) -> String {
     }
 
     res
+}
+
+pub fn get_dependency_tree_nodes(filter: &str) -> Vec<DependencyTreeNode> {
+    let (packages, _) = get_local_packages("").unwrap();
+    let filter = filter.to_lowercase();
+
+    let mut packages_lookup = HashMap::new();
+    for p in &packages {
+        packages_lookup.insert(p.id.to_lowercase(), p);
+    }
+
+    let mut nodes = Vec::new();
+    for p in &packages {
+        if filter != "all" && !p.id.contains(&filter) {
+            continue;
+        }
+        collect_dependency_tree_pkg_nodes(1, p, &packages_lookup, &mut nodes);
+    }
+
+    nodes
 }
 
 pub fn get_local_packages_text(filter: &str, limitoutput: bool) -> String {

@@ -31,6 +31,33 @@ pub async fn run_on_server_simple_get(request_path: &str, request_body: &str) ->
     }
 }
 
+pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -> Option<String> {
+    let (_, ip) = crate::server::get_server_ip();
+    let (_, port) = crate::server::get_server_port();
+    let url = format!("http://{}:{}/rocolatey{}", ip, port, request_path);
+
+    let client = ClientBuilder::new().build().expect("http client");
+    match client
+        .post(&url)
+        .header(CONTENT_TYPE, "application/json")
+        .body(request_body.to_string())
+        .send()
+        .await
+    {
+        Ok(resp) => match resp.text().await {
+            Ok(txt) => Some(txt),
+            Err(e) => {
+                eprintln!("Request to {} failed: {}", url, e);
+                None
+            }
+        },
+        Err(e) => {
+            eprintln!("Request to {} failed: {}", url, e);
+            None
+        }
+    }
+}
+
 /// Run a Chocolatey command on a remote rocolatey server and poll for completion.
 ///
 /// What it does:

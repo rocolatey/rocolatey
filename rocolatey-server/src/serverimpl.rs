@@ -11,14 +11,22 @@ use tokio::sync::RwLock;
 use rocolatey_lib::roco::{
     get_choco_sources,
     local::{
-        get_local_bad_packages, get_local_bad_packages_text, get_local_packages_json,
-        get_local_packages_text, get_sources_text,
+        get_dependency_tree_nodes, get_dependency_tree_text, get_local_bad_packages,
+        get_local_bad_packages_text, get_local_packages, get_local_packages_text, get_sources_text,
     },
-    remote::{get_outdated_packages, get_outdated_packages_text},
+    remote::{find_packages, get_outdated_packages, get_outdated_packages_text},
 };
 use rocolatey_lib::server::JobState;
 use rocolatey_lib::server::JobStatus;
 use rocolatey_lib::server::RocoServerChocoCommandRequest;
+use rocolatey_lib::server::RocoServerDependencyTreeResponse;
+use rocolatey_lib::server::RocoServerFeedsResponse;
+use rocolatey_lib::server::RocoServerListRequest;
+use rocolatey_lib::server::RocoServerOutdatedRequest;
+use rocolatey_lib::server::RocoServerOutdatedResponse;
+use rocolatey_lib::server::RocoServerPackagesResponse;
+use rocolatey_lib::server::RocoServerSearchRequest;
+use rocolatey_lib::server::ROCO_SERVER_SCHEMA_VERSION;
 
 pub type JobStore = Arc<RwLock<HashMap<Uuid, JobState>>>;
 
@@ -42,7 +50,33 @@ pub(crate) fn create_warp_filter(
     let local_json = api_base
         .and(warp::path!("local" / "json"))
         .and(warp::path::end())
-        .map(|| get_local_packages_json("all"));
+        .map(|| match get_local_packages("all") {
+            Ok((data, total_count)) => warp::reply::json(&RocoServerPackagesResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                total_count: Some(total_count),
+                data,
+            }),
+            Err(err) => {
+                let body = serde_json::json!({ "error": format!("Error: {}", err) });
+                warp::reply::json(&body)
+            }
+        });
+
+    let local_json_post = api_base
+        .and(warp::path!("local" / "json"))
+        .and(warp::post())
+        .and(warp::body::json())
+        .map(|req: RocoServerListRequest| match get_local_packages(&req.filter) {
+            Ok((data, total_count)) => warp::reply::json(&RocoServerPackagesResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                total_count: Some(total_count),
+                data,
+            }),
+            Err(err) => {
+                let body = serde_json::json!({ "error": format!("Error: {}", err) });
+                warp::reply::json(&body)
+            }
+        });
 
     let bad = api_base
         .and(warp::path("bad"))
@@ -58,7 +92,11 @@ pub(crate) fn create_warp_filter(
         .and(warp::path!("bad" / "json"))
         .and(warp::path::end())
         .map(|| match get_local_bad_packages() {
-            Ok(data) => warp::reply::json(&tokio::task::block_in_place(|| data)),
+            Ok(data) => warp::reply::json(&RocoServerPackagesResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                total_count: Some(data.len()),
+                data,
+            }),
             Err(err) => {
                 let body = serde_json::json!({ "error": format!("Error: {}", err) });
                 warp::reply::json(&body)
@@ -79,23 +117,16 @@ pub(crate) fn create_warp_filter(
         .and(warp::path!("source" / "json"))
         .and(warp::path::end())
         .map(|| match get_choco_sources() {
-            Ok(data) => warp::reply::json(&tokio::task::block_in_place(|| data)),
+            Ok(data) => warp::reply::json(&RocoServerFeedsResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                data,
+            }),
             Err(err) => {
                 let body = serde_json::json!({ "error": format!("Error: {}", err) });
                 warp::reply::json(&body)
             }
         });
 
-    // TODO: parse body for filter options (pre, ignore_pinned, ignore_unfound) instead of hardcoding them here
-    /*
-        let request_body = serde_json::json!({
-            "pkg": pkg,
-            "pre": pre,
-            "ignore_pinned": ignore_pinned,
-            "ignore_unfound": ignore_unfound
-        })
-        .to_string();
-    */
     let outdated = api_base
         .and(warp::path("outdated"))
         .and(warp::path::end())
@@ -113,8 +144,48 @@ pub(crate) fn create_warp_filter(
 
     let outdated_json = api_base
         .and(warp::path!("outdated" / "json"))
+        .and(warp::post())
+        .and(warp::body::json())
+        .and_then(req_outdated_json);
+
+    let local_deptree = api_base
+        .and(warp::path!("local" / "deptree"))
         .and(warp::path::end())
-        .and_then(|| req_outdated_json());
+        .map(|| get_dependency_tree_text("all"));
+
+    let local_deptree_json = api_base
+        .and(warp::path!("local" / "deptree" / "json"))
+        .and(warp::post())
+        .and(warp::body::json())
+        .map(|req: RocoServerListRequest| {
+            warp::reply::json(&RocoServerDependencyTreeResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                data: get_dependency_tree_nodes(&req.filter),
+            })
+        });
+
+    let search_json = api_base
+        .and(warp::path!("search" / "json"))
+        .and(warp::post())
+        .and(warp::body::json())
+        .and_then(|req: RocoServerSearchRequest| async move {
+            let terms: Vec<&str> = req.terms.iter().map(|s| s.as_str()).collect();
+            match find_packages(&terms, false, req.prerelease).await {
+                Ok(map) => {
+                    let mut pkgs: Vec<_> = map.into_values().collect();
+                    pkgs.sort_by(|a, b| a.id.to_lowercase().cmp(&b.id.to_lowercase()));
+                    Ok::<_, warp::Rejection>(warp::reply::json(&RocoServerPackagesResponse {
+                        schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                        total_count: Some(pkgs.len()),
+                        data: pkgs,
+                    }))
+                }
+                Err(err) => {
+                    let body = serde_json::json!({ "error": format!("Error: {}", err) });
+                    Ok::<_, warp::Rejection>(warp::reply::json(&body))
+                }
+            }
+        });
 
     let runchoco = api_base
         .and(warp::path!("choco"))
@@ -214,6 +285,9 @@ pub(crate) fn create_warp_filter(
     let routes = local
         .or(local_r)
         .or(local_json)
+        .or(local_json_post)
+        .or(local_deptree)
+        .or(local_deptree_json)
         .or(bad)
         .or(bad_r)
         .or(bad_json)
@@ -224,6 +298,7 @@ pub(crate) fn create_warp_filter(
         .or(outdated_r)
         .or(outdated_l)
         .or(outdated_json)
+        .or(search_json)
         .or(runchoco)
         .or(status_get);
 
@@ -251,9 +326,21 @@ async fn req_outdated(
     Ok(result)
 }
 
-async fn req_outdated_json() -> Result<impl warp::Reply, warp::Rejection> {
-    let result = get_outdated_packages("all", false, false, false, true).await;
-    Ok(warp::reply::json(&result))
+async fn req_outdated_json(
+    req: RocoServerOutdatedRequest,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let (_, data) = get_outdated_packages(
+        &req.pkg,
+        false,
+        req.pre,
+        req.ignore_pinned,
+        req.ignore_unfound,
+    )
+    .await;
+    Ok(warp::reply::json(&RocoServerOutdatedResponse {
+        schema_version: ROCO_SERVER_SCHEMA_VERSION,
+        data,
+    }))
 }
 
 async fn run_choco_background(id: Uuid, cmd: RocoServerChocoCommandRequest, store: JobStore) {
