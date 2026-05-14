@@ -104,27 +104,30 @@ fn prepare_fake_chocolatey_home() -> PathBuf {
     home
 }
 
-fn start_server(port: u16, chocolatey_home: &Path) -> Child {
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+fn server_binary() -> PathBuf {
+    // Integration test binaries live in target/debug/deps/; the server
+    // binary lives one directory up, in target/debug/.
+    let test_exe = std::env::current_exe().expect("cannot determine test binary path");
+    let debug_dir = test_exe
+        .parent()
+        .expect("test exe has no parent dir")
+        .parent()
+        .expect("deps has no parent dir");
+    let mut path = debug_dir.join("rocolatey-server");
+    if cfg!(windows) {
+        path.set_extension("exe");
+    }
+    path
+}
 
-    Command::new("cargo")
-        .current_dir(&repo_root)
+fn start_server(port: u16, chocolatey_home: &Path) -> Child {
+    Command::new(server_binary())
         .env("ChocolateyInstall", chocolatey_home)
-        .args([
-            "run",
-            "--quiet",
-            "-p",
-            "rocolatey-server",
-            "--",
-            "--address",
-            "127.0.0.1",
-            "--port",
-            &port.to_string(),
-        ])
+        .args(["--address", "127.0.0.1", "--port", &port.to_string()])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("failed to start rocolatey-server with cargo run")
+        .expect("failed to start rocolatey-server")
 }
 
 fn run_roco(args: &[&str], chocolatey_home: &Path, port: Option<u16>) -> Output {
