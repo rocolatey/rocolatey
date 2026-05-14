@@ -144,9 +144,25 @@ pub(crate) fn create_warp_filter(
 
     let outdated_json = api_base
         .and(warp::path!("outdated" / "json"))
-        .and(warp::post())
-        .and(warp::body::json())
-        .and_then(req_outdated_json);
+        .and(warp::path::end())
+        .and(warp::get())
+        .map(|| match get_outdated_packages() {
+            Ok(data) => warp::reply::json(&RocoServerPackagesResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                total_count: Some(data.len()),
+                data,
+            }),
+            Err(err) => {
+                let body = serde_json::json!({ "error": format!("Error: {}", err) });
+                warp::reply::json(&body)
+            }
+        })
+        .or(api_base
+            .and(warp::path!("outdated" / "json"))
+            .and(warp::path::end())
+            .and(warp::post())
+            .and(warp::body::json())
+            .and_then(req_outdated_json));
 
     let local_deptree = api_base
         .and(warp::path!("local" / "deptree"))
