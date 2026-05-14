@@ -9,22 +9,10 @@ pub static ROCO_VERBOSE: AtomicBool = AtomicBool::new(false);
 pub static ROCO_REQUIRE_SSL: AtomicBool = AtomicBool::new(false);
 
 pub mod server {
+    use crate::roco::{Feed, OutdatedInfo, Package};
 
     pub const ROCO_SERVER_DEFAULT_PORT: &str = "29295"; // derived from "ro" = 0x726F;
-
-    use serde::{Deserialize, Serialize};
-    use uuid::Uuid;
-    #[derive(Debug, Deserialize, Serialize)]
-    pub struct RocoServerChocoCommandRequest {
-        pub command: String,
-        pub args: Vec<String>,
-    }
-
-    #[derive(Serialize, Deserialize)]
-    pub struct RocoServerChocoJobIdResponse {
-        pub id: String,
-        pub status: String,
-    }
+    pub const ROCO_SERVER_SCHEMA_VERSION: u32 = 1;
 
     #[derive(Serialize, Deserialize, Clone)]
     pub enum JobStatus {
@@ -41,6 +29,74 @@ pub mod server {
         pub created_at: std::time::SystemTime,
         pub logs: Vec<String>, // store recent log lines
     }
+
+    use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct RocoServerChocoCommandRequest {
+        pub command: String,
+        pub args: Vec<String>,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    pub struct RocoServerChocoJobIdResponse {
+        pub id: String,
+        pub status: String,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct RocoServerOutdatedRequest {
+        pub pkg: String,
+        pub pre: bool,
+        pub ignore_pinned: bool,
+        pub ignore_unfound: bool,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct RocoServerListRequest {
+        pub filter: String,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct RocoServerSearchRequest {
+        pub terms: Vec<String>,
+        pub prerelease: bool,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    pub struct RocoServerPackagesResponse {
+        pub schema_version: u32,
+        pub total_count: Option<usize>,
+        pub data: Vec<Package>,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    pub struct RocoServerFeedsResponse {
+        pub schema_version: u32,
+        pub data: Vec<Feed>,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    pub struct RocoServerOutdatedResponse {
+        pub schema_version: u32,
+        pub data: Vec<OutdatedInfo>,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    pub struct RocoServerDependencyTreeResponse {
+        pub schema_version: u32,
+        pub data: Vec<DependencyTreeNode>,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    pub struct DependencyTreeNode {
+        pub id: String,
+        pub version: String,
+        pub depth: usize,
+        pub parent_id: Option<String>,
+        pub missing: bool,
+    }
+
 
     pub fn get_server_port() -> (bool, String) {
         std::env::var("ROCO_SERVER_PORT")

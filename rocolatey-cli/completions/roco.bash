@@ -83,12 +83,16 @@ _roco() {
 
     case "${cmd}" in
         roco)
-            opts="-h -V --help --version list bad outdated source search license upgrade install uninstall help"
+            opts="-h -V --color --help --version list bad outdated source search license upgrade install uninstall help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -97,12 +101,16 @@ _roco() {
             return 0
             ;;
         roco__bad)
-            opts="-r -v -h --limitoutput --json --verbose --help"
+            opts="-r -v -h --limitoutput --json --verbose --color --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -265,12 +273,16 @@ _roco() {
             return 0
             ;;
         roco__install)
-            opts="-p -r -v -h --pre --limitoutput --verbose --sslcheck --help <pkg>"
+            opts="-p -r -v -h --pre --limitoutput --verbose --sslcheck --color --help <pkg>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -279,12 +291,16 @@ _roco() {
             return 0
             ;;
         roco__license)
-            opts="-f -h --full --json --help"
+            opts="-f -h --full --json --color --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -293,12 +309,16 @@ _roco() {
             return 0
             ;;
         roco__list)
-            opts="-r -v -h --limitoutput --json --verbose --dependency-tree --help [filter]"
+            opts="-r -v -h --limitoutput --json --verbose --dependency-tree --color --help [filter]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -307,12 +327,16 @@ _roco() {
             return 0
             ;;
         roco__outdated)
-            opts="-l -p -r -v -h --choco-mode --ignore-pinned --ignore-unfound --pre --limitoutput --json --verbose --sslcheck --help [pkg]"
+            opts="-l -p -r -v -h --choco-mode --ignore-pinned --ignore-unfound --pre --limitoutput --json --verbose --sslcheck --color --help [pkg]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -321,12 +345,16 @@ _roco() {
             return 0
             ;;
         roco__search)
-            opts="-r -v -h --limitoutput --json --verbose --help <pkg>"
+            opts="-r -v -h --limitoutput --json --verbose --color --help <pkg>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -335,12 +363,16 @@ _roco() {
             return 0
             ;;
         roco__source)
-            opts="-r -v -h --limitoutput --json --verbose --help"
+            opts="-r -v -h --limitoutput --json --verbose --color --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -349,12 +381,16 @@ _roco() {
             return 0
             ;;
         roco__uninstall)
-            opts="-r -v -h --limitoutput --verbose --help <pkg>"
+            opts="-r -v -h --limitoutput --verbose --color --help <pkg>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -363,12 +399,16 @@ _roco() {
             return 0
             ;;
         roco__upgrade)
-            opts="-p -r -v -h --pre --limitoutput --verbose --sslcheck --help [pkg]"
+            opts="-p -r -v -h --pre --limitoutput --verbose --sslcheck --color --help [pkg]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;

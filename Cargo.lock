@@ -3480,6 +3480,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "owo-colors"
+version = "4.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d211803b9b6b570f68772237e415a029d5a50c65d382910b879fb19d3271f94d"
+
+[[package]]
 name = "parking"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4084,6 +4090,7 @@ dependencies = [
  "assert_cmd",
  "clap",
  "clap_complete",
+ "owo-colors",
  "rocolatey-lib",
  "serde",
  "serde_json",

@@ -1,6 +1,6 @@
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -12,7 +12,7 @@ pub mod remote;
 pub mod semver;
 use crate::println_verbose;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum NuspecTag {
     Null,
     Id,
@@ -20,7 +20,7 @@ pub enum NuspecTag {
     Dependency,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum FeedType {
     Unknown,
     LocalFileSystem,
@@ -28,7 +28,7 @@ pub enum FeedType {
     NuGetV3,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     pub id: String,
     pub version: String,
@@ -57,7 +57,7 @@ impl Package {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Feed {
     pub name: String,
     pub url: String,
@@ -73,19 +73,19 @@ pub struct Feed {
     pub service_index: Option<nuget3::NuGetV3Index>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Credential {
     pub user: String,
     pub pass: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProxySettings {
     pub url: String,
     pub credential: Option<Credential>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutdatedInfo {
     pub id: String,
     pub local_version: String,

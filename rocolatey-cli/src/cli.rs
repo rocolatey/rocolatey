@@ -6,7 +6,7 @@ pub fn build_cli() -> Command {
         .short('r')
         .long("limitoutput")
         .action(ArgAction::SetTrue)
-        .help("limit the output to essential information");
+      .help("limit output to essential information (automation-safe, no ANSI colors)");
     let common_arg_json_output: Arg = Arg::new("json-output")
         .long("json")
         .action(ArgAction::SetTrue)
@@ -26,6 +26,14 @@ pub fn build_cli() -> Command {
         .action(ArgAction::SetTrue)
         .help("require https/ssl-validation");
 
+    let color_arg = Arg::new("color")
+        .long("color")
+        .value_name("WHEN")
+        .global(true)
+        .default_value("auto")
+        .value_parser(["auto", "always", "never"])
+      .help("Control color output: auto (default), always, or never. -r always stays uncolored");
+
     Command::new("Rocolatey")
     .version("0.9.5")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
@@ -40,6 +48,7 @@ pub fn build_cli() -> Command {
                                                                  
                                                                  
 a Chocolatey package manager interface.")
+    .arg(color_arg)
     .subcommand(
       Command::new("list")
         .about("list local installed packages")

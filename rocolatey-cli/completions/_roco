@@ -15,6 +15,7 @@ _roco() {
 
     local context curcontext="$curcontext" state line
     _arguments "${_arguments_options[@]}" : \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
 '-h[Print help]' \
 '--help[Print help]' \
 '-V[Print version]' \
@@ -30,8 +31,9 @@ _roco() {
         case $line[1] in
             (list)
 _arguments "${_arguments_options[@]}" : \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '--json[output results in JSON format]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
@@ -43,8 +45,9 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (bad)
 _arguments "${_arguments_options[@]}" : \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '--json[output results in JSON format]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
@@ -54,14 +57,15 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (outdated)
 _arguments "${_arguments_options[@]}" : \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
 '--choco-mode[enables '\''ignore-pinned'\'' and '\''ignore-unfound'\''  (otherwise they are true by default, even if not set)]' \
 '--ignore-pinned[ignore any pinned packages  (default, unless '\''choco-mode'\'' is set)]' \
 '--ignore-unfound[ignore any unfound packages  (default, unless '\''choco-mode'\'' is set)]' \
 '-l[output a whitespace-separated list of results]' \
 '-p[include prerelease versions]' \
 '--pre[include prerelease versions]' \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '--json[output results in JSON format]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
@@ -73,8 +77,9 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (source)
 _arguments "${_arguments_options[@]}" : \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '--json[output results in JSON format]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
@@ -84,8 +89,9 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (search)
 _arguments "${_arguments_options[@]}" : \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '--json[output results in JSON format]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
@@ -96,6 +102,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (license)
 _arguments "${_arguments_options[@]}" : \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
 '-f[display full license information]' \
 '--full[display full license information]' \
 '--json[output results in JSON format]' \
@@ -105,10 +112,11 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (upgrade)
 _arguments "${_arguments_options[@]}" : \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
 '-p[include prerelease versions]' \
 '--pre[include prerelease versions]' \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
 '--sslcheck[require https/ssl-validation]' \
@@ -119,10 +127,11 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (install)
 _arguments "${_arguments_options[@]}" : \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
 '-p[include prerelease versions]' \
 '--pre[include prerelease versions]' \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
 '--sslcheck[require https/ssl-validation]' \
@@ -133,8 +142,9 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (uninstall)
 _arguments "${_arguments_options[@]}" : \
-'-r[limit the output to essential information]' \
-'--limitoutput[limit the output to essential information]' \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
 '-v[be verbose]' \
 '--verbose[be verbose]' \
 '-h[Print help]' \
