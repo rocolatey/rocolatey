@@ -16,12 +16,6 @@ pub enum ColorMode {
 impl ColorMode {
     /// Returns `true` when colors should be written to stdout.
     pub fn is_enabled(self) -> bool {
-        if std::env::var_os("NO_COLOR").is_some() {
-            return false;
-        }
-        if matches!(std::env::var("CLICOLOR_FORCE").as_deref(), Ok("1")) {
-            return true;
-        }
         self.is_enabled_for_tty(std::io::stdout().is_terminal())
     }
 
