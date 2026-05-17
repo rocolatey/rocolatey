@@ -35,6 +35,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
             [CompletionResult]::new('install', 'install', [CompletionResultType]::ParameterValue, 'install choco packages (using choco.exe)')
             [CompletionResult]::new('uninstall', 'uninstall', [CompletionResultType]::ParameterValue, 'uninstall choco packages (using choco.exe)')
+            [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'manage roco server configuration and TLS setup')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -146,6 +147,18 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
+        'roco;server' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('--setup-tls-help', '--setup-tls-help', [CompletionResultType]::ParameterName, 'display TLS setup status and enrollment guidance')
+            [CompletionResult]::new('--gen-cert', '--gen-cert', [CompletionResultType]::ParameterName, 'generate TLS certificates for client and server')
+            [CompletionResult]::new('--force', '--force', [CompletionResultType]::ParameterName, 'regenerate certificates even if they exist (creates timestamped backups)')
+            [CompletionResult]::new('--bootstrap-local-trust', '--bootstrap-local-trust', [CompletionResultType]::ParameterName, 'bootstrap local key exchange and enroll current account client fingerprint on this host')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
         'roco;help' {
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list local installed packages')
             [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'list packages in lib-bad/')
@@ -156,6 +169,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
             [CompletionResult]::new('install', 'install', [CompletionResultType]::ParameterValue, 'install choco packages (using choco.exe)')
             [CompletionResult]::new('uninstall', 'uninstall', [CompletionResultType]::ParameterValue, 'uninstall choco packages (using choco.exe)')
+            [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'manage roco server configuration and TLS setup')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -184,6 +198,9 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;help;uninstall' {
+            break
+        }
+        'roco;help;server' {
             break
         }
         'roco;help;help' {

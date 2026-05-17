@@ -1,18 +1,164 @@
 use reqwest::header::CONTENT_TYPE;
 use serde_json;
 
-use crate::server::{JobStatus, RocoServerChocoCommandRequest};
+use crate::server::{JobStatus, RocoServerChocoCommandRequest, ClientTlsConfig};
 use reqwest::ClientBuilder;
+use crate::roco::client_tls;
+
+fn client_fingerprint_header_value(
+    tls_config: &ClientTlsConfig,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let cert_pem = std::fs::read(&tls_config.cert_path)?;
+    crate::bootstrap::fingerprint_full(&cert_pem)
+}
+
+fn determine_scheme() -> &'static str {
+    "https"
+}
+
+fn build_client() -> Result<reqwest::Client, Box<dyn std::error::Error>> {
+    let tls_config = ClientTlsConfig::default();
+    build_client_with_config(&tls_config)
+}
+
+fn build_client_with_config(
+    tls_config: &ClientTlsConfig,
+) -> Result<reqwest::Client, Box<dyn std::error::Error>> {
+    if client_tls::client_tls_materials_exist(&tls_config.cert_path, &tls_config.key_path) {
+        // Pinned server certificate is mandatory. We refuse to connect without it so that
+        // self-signed server certs are validated against a known-good copy rather than
+        // accepted blindly. There is no fallback to danger_accept_invalid_certs.
+        if !tls_config.known_server_keys_exist() {
+            return Err(format!(
+                "Pinned server certificate not found at {}. \
+                 Copy the server's certificate PEM there before running remote commands \
+                 (see `roco setup` for guidance).",
+                tls_config.known_server_keys_path.display()
+            ).into());
+        }
+
+        let pem = tls_config.read_known_server_keys().map_err(|e| {
+            format!(
+                "Failed to read pinned server certificate at {}: {}",
+                tls_config.known_server_keys_path.display(),
+                e
+            )
+        })?;
+
+        let cert = reqwest::Certificate::from_pem(pem.as_bytes()).map_err(|e| {
+            format!(
+                "Pinned server certificate at {} is not valid PEM: {}. \
+                 Re-copy the server's certificate PEM file.",
+                tls_config.known_server_keys_path.display(),
+                e
+            )
+        })?;
+
+        let builder = ClientBuilder::new()
+            .tls_built_in_root_certs(false)
+            .add_root_certificate(cert);
+
+        Ok(builder.build()?)
+    } else {
+        Err(format!(
+            "TLS client materials not found at {} / {}. \n\
+             Run `roco setup` to generate client credentials before connecting to a rocolatey server.",
+            tls_config.cert_path.display(),
+            tls_config.key_path.display()
+        ).into())
+    }
+}
+
+fn resolve_server_url(server_ip: &str, server_port: u16, scheme: &str, request_path: &str) -> String {
+    format!("{}://{}:{}/rocolatey{}", scheme, server_ip, server_port, request_path)
+}
+
+fn print_deny_if_present(endpoint: &str, body: &str) -> bool {
+    let deny = match serde_json::from_str::<crate::server::RocoServerDenyResponse>(body) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+
+    eprintln!(
+        "Server deny on {}: code={:?} request_id={} message={}",
+        endpoint, deny.code, deny.request_id, deny.message
+    );
+
+    if let Some(hint) = deny.enrollment_hint {
+        eprintln!("Hint: {}", hint);
+    }
+
+    if let Some(fp) = deny.short_fingerprint {
+        eprintln!("Fingerprint: {}", fp);
+    }
+
+    true
+}
 
 pub async fn run_on_server_simple_get(request_path: &str, request_body: &str) -> Option<String> {
     let (_, ip) = crate::server::get_server_ip();
     let (_, port) = crate::server::get_server_port();
-    let url = format!("http://{}:{}/rocolatey{}", ip, port, request_path);
+    let scheme = determine_scheme();
+    let url = resolve_server_url(&ip, port.parse().unwrap_or_default(), scheme, request_path);
+    let tls_config = ClientTlsConfig::default();
 
-    let client = ClientBuilder::new().build().expect("http client");
+    let client = match build_client() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to build HTTP client: {}", e);
+            return None;
+        }
+    };
+
     match client
         .get(&url)
         .header(CONTENT_TYPE, "application/json")
+        .header(
+            crate::server::authorization::EMERGENCY_TRUST_OVERRIDE_HEADER,
+            client_fingerprint_header_value(&tls_config).unwrap_or_default(),
+        )
+        .body(request_body.to_string())
+        .send()
+        .await
+    {
+        Ok(resp) => match resp.text().await {
+            Ok(txt) => Some(txt),
+            Err(e) => {
+                eprintln!("Request to {} failed: {}", url, e);
+                None
+            }
+        },
+        Err(e) => {
+            eprintln!("Request to {} failed: {}", url, e);
+            None
+        }
+    }
+}
+
+pub async fn run_on_server_simple_get_with_config(
+    server_ip: &str,
+    server_port: u16,
+    request_path: &str,
+    request_body: &str,
+    tls_config: &ClientTlsConfig,
+) -> Option<String> {
+    let url = resolve_server_url(server_ip, server_port, "https", request_path);
+
+    let client = match build_client_with_config(tls_config) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to build HTTP client: {}", e);
+            return None;
+        }
+    };
+
+    match client
+        .get(&url)
+        .header(CONTENT_TYPE, "application/json")
+        .header(
+            crate::server::authorization::EMERGENCY_TRUST_OVERRIDE_HEADER,
+            client_fingerprint_header_value(tls_config).unwrap_or_default(),
+        )
         .body(request_body.to_string())
         .send()
         .await
@@ -34,12 +180,67 @@ pub async fn run_on_server_simple_get(request_path: &str, request_body: &str) ->
 pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -> Option<String> {
     let (_, ip) = crate::server::get_server_ip();
     let (_, port) = crate::server::get_server_port();
-    let url = format!("http://{}:{}/rocolatey{}", ip, port, request_path);
+    let scheme = determine_scheme();
+    let url = resolve_server_url(&ip, port.parse().unwrap_or_default(), scheme, request_path);
+    let tls_config = ClientTlsConfig::default();
 
-    let client = ClientBuilder::new().build().expect("http client");
+    let client = match build_client() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to build HTTP client: {}", e);
+            return None;
+        }
+    };
+
     match client
         .post(&url)
         .header(CONTENT_TYPE, "application/json")
+        .header(
+            crate::server::authorization::EMERGENCY_TRUST_OVERRIDE_HEADER,
+            client_fingerprint_header_value(&tls_config).unwrap_or_default(),
+        )
+        .body(request_body.to_string())
+        .send()
+        .await
+    {
+        Ok(resp) => match resp.text().await {
+            Ok(txt) => Some(txt),
+            Err(e) => {
+                eprintln!("Request to {} failed: {}", url, e);
+                None
+            }
+        },
+        Err(e) => {
+            eprintln!("Request to {} failed: {}", url, e);
+            None
+        }
+    }
+}
+
+pub async fn run_on_server_simple_post_with_config(
+    server_ip: &str,
+    server_port: u16,
+    request_path: &str,
+    request_body: &str,
+    tls_config: &ClientTlsConfig,
+) -> Option<String> {
+    let url = resolve_server_url(server_ip, server_port, "https", request_path);
+
+    let client = match build_client_with_config(tls_config) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to build HTTP client: {}", e);
+            return None;
+        }
+    };
+
+    match client
+        .post(&url)
+        .header(CONTENT_TYPE, "application/json")
+        .header(
+            crate::server::authorization::EMERGENCY_TRUST_OVERRIDE_HEADER,
+            client_fingerprint_header_value(tls_config).unwrap_or_default(),
+        )
         .body(request_body.to_string())
         .send()
         .await
@@ -63,7 +264,7 @@ pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -
 /// What it does:
 /// - Builds a JSON `RocoServerChocoCommandRequest` from the provided
 ///   `choco_args` and `package_names` and POSTs it to the server at
-///   `http://<ROCO_SERVER_IP>:<ROCO_SERVER_PORT>/rocolatey/choco`.
+///   `https://<ROCO_SERVER_IP>:<ROCO_SERVER_PORT>/rocolatey/choco` (or http:// if no TLS).
 /// - Expects the server to respond with a job id. It then polls
 ///   `GET /rocolatey/choco/status/<id>` to fetch
 ///   the job state and logs.
@@ -87,7 +288,8 @@ pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -
 pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> i32 {
     let (_, ip) = crate::server::get_server_ip();
     let (_, port) = crate::server::get_server_port();
-    let base = format!("http://{}:{}/rocolatey", ip, port);
+    let scheme = determine_scheme();
+    let base = format!("{}://{}:{}/rocolatey", scheme, ip, port);
     let poll_millis = crate::server::get_server_poll_interval_millis();
 
     let command = choco_args
@@ -98,18 +300,29 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
     args.extend(package_names.iter().map(|s| s.to_string()));
     let body = RocoServerChocoCommandRequest { command, args };
 
-    let client = ClientBuilder::new().build().expect("http client");
+    let client = match build_client() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to build HTTP client: {}", e);
+            return -1;
+        }
+    };
 
     // send POST -> get id
     let body_json = serde_json::to_string(&body).expect("serialize body");
     let resp = client
         .post(&format!("{}/choco", base))
         .header(CONTENT_TYPE, "application/json")
+        .header(
+            crate::server::authorization::EMERGENCY_TRUST_OVERRIDE_HEADER,
+            client_fingerprint_header_value(&ClientTlsConfig::default()).unwrap_or_default(),
+        )
         .body(body_json)
         .send()
         .await;
     let id = match resp {
         Ok(r) => {
+            let status = r.status();
             let txt = match r.text().await {
                 Ok(t) => t,
                 Err(e) => {
@@ -117,6 +330,16 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                     return -1;
                 }
             };
+
+            if print_deny_if_present("/choco", &txt) {
+                return -1;
+            }
+
+            if !status.is_success() {
+                eprintln!("request failed with status {}: {}", status, txt);
+                return -1;
+            }
+
             match serde_json::from_str::<crate::server::RocoServerChocoJobIdResponse>(&txt) {
                 Ok(j) => j.id,
                 Err(e) => {
@@ -138,10 +361,15 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
         tokio::time::sleep(std::time::Duration::from_millis(poll_millis)).await;
         let status_resp = client
             .get(&format!("{}/choco/status/{}", base, id))
+            .header(
+                crate::server::authorization::EMERGENCY_TRUST_OVERRIDE_HEADER,
+                client_fingerprint_header_value(&ClientTlsConfig::default()).unwrap_or_default(),
+            )
             .send()
             .await;
         match status_resp {
             Ok(r) => {
+                let status = r.status();
                 let txt = match r.text().await {
                     Ok(t) => t,
                     Err(e) => {
@@ -153,6 +381,20 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                         continue;
                     }
                 };
+
+                if print_deny_if_present("/choco/status", &txt) {
+                    return -1;
+                }
+
+                if !status.is_success() {
+                    eprintln!("status query failed with status {}: {}", status, txt);
+                    err_count += 1;
+                    if err_count >= 5 {
+                        return -1;
+                    }
+                    continue;
+                }
+
                 match serde_json::from_str::<crate::server::JobState>(&txt) {
                     Ok(js) => {
                         // print new logs

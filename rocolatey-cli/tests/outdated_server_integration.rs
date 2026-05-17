@@ -18,36 +18,6 @@ fn reserve_free_port() -> u16 {
         .port()
 }
 
-fn wait_for_http_ok(socket_addr: SocketAddr) {
-    let deadline = Instant::now() + Duration::from_secs(30);
-
-    loop {
-        if Instant::now() > deadline {
-            panic!("server did not become ready at {}", socket_addr);
-        }
-
-        match TcpStream::connect_timeout(&socket_addr, Duration::from_millis(250)) {
-            Ok(mut stream) => {
-                let request = format!(
-                    "GET /rocolatey/source HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
-                    socket_addr
-                );
-                if stream.write_all(request.as_bytes()).is_ok() {
-                    let mut response = String::new();
-                    if stream.read_to_string(&mut response).is_ok()
-                        && response.contains("local-dev")
-                    {
-                        return;
-                    }
-                }
-            }
-            Err(_) => {}
-        }
-
-        thread::sleep(Duration::from_millis(250));
-    }
-}
-
 fn copy_dir_recursive(src: &Path, dst: &Path) {
     fs::create_dir_all(dst).expect("create destination directory");
     for entry in fs::read_dir(src).expect("read source directory") {
@@ -104,45 +74,6 @@ fn prepare_fake_chocolatey_home() -> PathBuf {
     home
 }
 
-fn server_binary_path() -> PathBuf {
-    // Derive the path to the pre-compiled rocolatey-server binary.
-    // Using the binary directly (instead of `cargo run`) avoids contention on
-    // Cargo's global file-lock when several test threads start servers in parallel.
-    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
-    let target_dir = std::env::var_os("CARGO_TARGET_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| workspace_root.join("target"))
-        .join("debug");
-
-    let binary_name = if cfg!(windows) {
-        "rocolatey-server.exe"
-    } else {
-        "rocolatey-server"
-    };
-
-    target_dir.join(binary_name)
-}
-
-fn start_server(port: u16, chocolatey_home: &Path) -> Child {
-    Command::new(server_binary_path())
-        .env("ChocolateyInstall", chocolatey_home)
-        .args(["--address", "127.0.0.1", "--port", &port.to_string()])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .expect("failed to start rocolatey-server")
-}
-
-fn run_roco(args: &[&str], chocolatey_home: &Path, port: Option<u16>) -> Output {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_roco"));
-    cmd.env("ChocolateyInstall", chocolatey_home).args(args);
-    if let Some(port) = port {
-        cmd.env("ROCO_SERVER_IP", "127.0.0.1")
-            .env("ROCO_SERVER_PORT", port.to_string());
-    }
-    cmd.output().expect("run roco command")
-}
-
 fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).expect("stdout must be valid UTF-8")
 }
@@ -151,14 +82,249 @@ fn stderr(output: &Output) -> String {
     String::from_utf8(output.stderr.clone()).expect("stderr must be valid UTF-8")
 }
 
-fn assert_local_and_server_match(chocolatey_home: &Path, args: &[&str], expect_ansi: bool) {
-    let port = reserve_free_port();
-    let socket_addr = SocketAddr::from(([127, 0, 0, 1], port));
-    let mut server = start_server(port, chocolatey_home);
-    wait_for_http_ok(socket_addr);
+fn run_roco_with_env(
+    args: &[&str],
+    chocolatey_home: &Path,
+    port: Option<u16>,
+    extra_env: &[(&str, &str)],
+) -> Output {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_roco"));
+    cmd.env("ChocolateyInstall", chocolatey_home);
+    if let Some(port) = port {
+        cmd.env("ROCO_SERVER_IP", "127.0.0.1")
+            .env("ROCO_SERVER_PORT", port.to_string());
+    }
+    for (key, value) in extra_env {
+        cmd.env(key, value);
+    }
+    cmd.args(args);
+    cmd.output().expect("run roco command")
+}
 
+fn run_roco(args: &[&str], chocolatey_home: &Path, port: Option<u16>) -> Output {
+    run_roco_with_env(args, chocolatey_home, port, &[])
+}
+
+fn start_server_with_env(port: u16, chocolatey_home: &Path, extra_env: &[(&str, &str)]) -> Child {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+
+    let mut command = Command::new("cargo");
+    command.current_dir(&repo_root).env("ChocolateyInstall", chocolatey_home);
+    for (key, value) in extra_env {
+        command.env(key, value);
+    }
+
+    command
+        .args([
+            "run",
+            "--quiet",
+            "-p",
+            "rocolatey-server",
+            "--",
+            "--address",
+            "127.0.0.1",
+            "--port",
+            &port.to_string(),
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("failed to start rocolatey-server with cargo run")
+}
+
+fn wait_for_remote_tls_deny(
+    chocolatey_home: &Path,
+    port: u16,
+    extra_env: &[(&str, &str)],
+) -> Output {
+    let deadline = Instant::now() + Duration::from_secs(45);
+    loop {
+        let output = run_roco_with_env(
+            &["source", "--json"],
+            chocolatey_home,
+            Some(port),
+            extra_env,
+        );
+
+        let stderr = stderr(&output);
+        if stderr.contains("NotEnrolledClient") || stderr.contains("empty enrollment mode") {
+            return output;
+        }
+
+        if Instant::now() > deadline {
+            panic!(
+                "server did not reach the expected deny state; last stderr was: {}",
+                stderr
+            );
+        }
+
+        thread::sleep(Duration::from_millis(250));
+    }
+}
+
+fn wait_for_remote_tls_success(
+    chocolatey_home: &Path,
+    port: u16,
+    extra_env: &[(&str, &str)],
+) -> Output {
+    let deadline = Instant::now() + Duration::from_secs(45);
+    loop {
+        let output = run_roco_with_env(
+            &["source", "--json"],
+            chocolatey_home,
+            Some(port),
+            extra_env,
+        );
+
+        if output.status.success() {
+            let output_stdout = stdout(&output);
+            let output_stderr = stderr(&output);
+            let has_ready_payload = output_stdout.contains("\"schema_version\":1")
+                || output_stdout.contains("\"schema_version\": 1")
+                || output_stdout.contains("local-dev");
+            let has_transport_error = output_stderr.contains("Request to ")
+                || output_stderr.contains("Error fetching")
+                || output_stderr.contains("Connection refused")
+                || output_stderr.contains("error trying to connect");
+
+            if has_ready_payload && !has_transport_error {
+                return output;
+            }
+        }
+
+        if Instant::now() > deadline {
+            panic!(
+                "server did not reach the expected success state; last stderr was: {}",
+                stderr(&output)
+            );
+        }
+
+        thread::sleep(Duration::from_millis(250));
+    }
+}
+
+fn read_client_certificate_fingerprint(client_cert_path: &Path) -> String {
+    let cert_pem = fs::read(client_cert_path).expect("read client cert");
+    rocolatey_lib::bootstrap::fingerprint_full(&cert_pem).expect("fingerprint client cert")
+}
+
+fn read_server_certificate_pem(server_cert_path: &Path) -> Vec<u8> {
+    fs::read(server_cert_path).expect("read server cert")
+}
+
+fn prepare_tls_test_roots() -> (PathBuf, PathBuf, PathBuf, PathBuf, PathBuf) {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time before epoch")
+        .as_nanos();
+
+    let workspace = std::env::temp_dir().join(format!(
+        "rocolatey-phase7-tls-{}-{}",
+        std::process::id(),
+        unique
+    ));
+    let client_home = workspace.join("client-home");
+    let server_root = workspace.join("server-root");
+    let fake_home = workspace.join("fake-choco-home");
+    let fake_repo = repo_root.join("test/fake_repo");
+
+    fs::create_dir_all(&client_home).expect("create client root");
+    fs::create_dir_all(&server_root).expect("create server root");
+    copy_dir_recursive(&repo_root.join("test/fake_choco_home"), &fake_home);
+    fs::create_dir_all(fake_home.join("lib-bad")).expect("create empty lib-bad directory");
+
+    let config_path = fake_home.join("config/chocolatey.config");
+    let config = fs::read_to_string(&config_path).expect("read fake chocolatey.config");
+    let fake_repo_value = fake_repo.to_string_lossy().replace('&', "&amp;");
+    let config = config
+        .replace(
+            r#"<source id="chocolatey" value="https://chocolatey.org/api/v2" disabled="false""#,
+            r#"<source id="chocolatey" value="https://chocolatey.org/api/v2" disabled="true""#,
+        )
+        .replace(
+            r#"<source id="nuget.org" value="https://api.nuget.org/v3/index.json" disabled="false""#,
+            r#"<source id="nuget.org" value="https://api.nuget.org/v3/index.json" disabled="true""#,
+        )
+        .replace(
+            r#"<source id="local-dev" value="c:/local-pkgs" disabled="true""#,
+            &format!(
+                r#"<source id="local-dev" value="{}" disabled="false""#,
+                fake_repo_value
+            ),
+        );
+    fs::write(&config_path, config).expect("write fake chocolatey.config");
+
+    (workspace, client_home, server_root, fake_home, fake_repo)
+}
+
+fn assert_local_and_server_match(chocolatey_home: &Path, args: &[&str], expect_ansi: bool) {
+    // Set up TLS for server (required by secure-only transport model)
+    let (_workspace, client_home, server_root, _fake_home, _) = prepare_tls_test_roots();
+    let client_xdg = client_home.to_string_lossy().to_string();
+    let server_trust = server_root.to_string_lossy().to_string();
+
+    // Generate TLS certificates
+    let gen_cert_output = run_roco_with_env(
+        &["server", "--gen-cert"],
+        chocolatey_home,
+        None,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+    assert!(
+        gen_cert_output.status.success(),
+        "certificate generation failed: stderr={:?}",
+        stderr(&gen_cert_output)
+    );
+
+    // Set up client trust for server certificate
+    let client_cfg = rocolatey_lib::server::ClientTlsConfig::new(
+        client_home.join("rocolatey/client/client.crt.pem"),
+        client_home.join("rocolatey/client/client.key.pem"),
+        client_home.join("rocolatey/client/known_server_keys"),
+    );
+    let server_cfg = rocolatey_lib::server::ServerTlsConfig::new(
+        server_root.join("server.crt.pem"),
+        server_root.join("server.key.pem"),
+        server_root.join("authorized_keys"),
+    );
+    let server_cert = read_server_certificate_pem(&server_cfg.cert_path);
+    fs::write(&client_cfg.known_server_keys_path, server_cert).expect("write pinned server cert");
+
+    // Enroll client automatically
+    let client_fingerprint = read_client_certificate_fingerprint(&client_cfg.cert_path);
+    fs::write(&server_cfg.authorized_keys_path, format!("{}\n", client_fingerprint))
+        .expect("write enrolled client fingerprint");
+
+    let port = reserve_free_port();
+    let mut server = start_server_with_env(
+        port,
+        chocolatey_home,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+
+    // Wait for TLS server to be ready
+    let ready_output = wait_for_remote_tls_success(
+        chocolatey_home,
+        port,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+    assert!(
+        ready_output.status.success(),
+        "server did not become ready with TLS; stderr: {}",
+        stderr(&ready_output)
+    );
+
+    // Run local command (no server, no TLS needed)
     let local = run_roco(args, chocolatey_home, None);
-    let remote = run_roco(args, chocolatey_home, Some(port));
+
+    // Run remote command (against TLS server with enrolled client)
+    let remote = run_roco_with_env(
+        args,
+        chocolatey_home,
+        Some(port),
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
 
     let local_stdout = stdout(&local);
     let remote_stdout = stdout(&remote);
@@ -166,13 +332,17 @@ fn assert_local_and_server_match(chocolatey_home: &Path, args: &[&str], expect_a
     let remote_stderr = stderr(&remote);
 
     assert!(local.status.success(), "local command failed: {:?}", local);
-    assert!(remote.status.success(), "server command failed: {:?}", remote);
+    assert!(
+        remote.status.success(),
+        "server command failed: stderr={:?}",
+        remote_stderr
+    );
     assert_eq!(
         local_stdout,
         remote_stdout,
         "local and server output diverged\nlocal stderr: {:?}\nremote stderr: {:?}",
         local_stderr,
-        remote_stderr,
+        remote_stderr
     );
     assert_eq!(has_ansi_escape(&local_stdout), expect_ansi);
     assert_eq!(has_ansi_escape(&remote_stdout), expect_ansi);
@@ -232,20 +402,66 @@ fn search_server_backed_output_matches_local_renderer() {
 #[test]
 fn server_json_and_limitoutput_remain_ansi_free() {
     let chocolatey_home = prepare_fake_chocolatey_home();
-    let port = reserve_free_port();
-    let socket_addr = SocketAddr::from(([127, 0, 0, 1], port));
-    let mut server = start_server(port, &chocolatey_home);
-    wait_for_http_ok(socket_addr);
+    
+    // Set up TLS for server (required by secure-only transport model)
+    let (_workspace, client_home, server_root, _fake_home, _) = prepare_tls_test_roots();
+    let client_xdg = client_home.to_string_lossy().to_string();
+    let server_trust = server_root.to_string_lossy().to_string();
 
-    let json_output = run_roco(
+    // Generate TLS certificates
+    let gen_cert_output = run_roco_with_env(
+        &["server", "--gen-cert"],
+        &chocolatey_home,
+        None,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+    assert!(gen_cert_output.status.success(), "certificate generation failed");
+
+    // Set up client trust for server certificate
+    let client_cfg = rocolatey_lib::server::ClientTlsConfig::new(
+        client_home.join("rocolatey/client/client.crt.pem"),
+        client_home.join("rocolatey/client/client.key.pem"),
+        client_home.join("rocolatey/client/known_server_keys"),
+    );
+    let server_cfg = rocolatey_lib::server::ServerTlsConfig::new(
+        server_root.join("server.crt.pem"),
+        server_root.join("server.key.pem"),
+        server_root.join("authorized_keys"),
+    );
+    let server_cert = read_server_certificate_pem(&server_cfg.cert_path);
+    fs::write(&client_cfg.known_server_keys_path, server_cert).expect("write pinned server cert");
+
+    // Enroll client automatically
+    let client_fingerprint = read_client_certificate_fingerprint(&client_cfg.cert_path);
+    fs::write(&server_cfg.authorized_keys_path, format!("{}\n", client_fingerprint))
+        .expect("write enrolled client fingerprint");
+
+    let port = reserve_free_port();
+    let mut server = start_server_with_env(
+        port,
+        &chocolatey_home,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+
+    // Wait for TLS server to be ready
+    let ready_output = wait_for_remote_tls_success(
+        &chocolatey_home,
+        port,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+    assert!(ready_output.status.success(), "server did not become ready with TLS");
+
+    let json_output = run_roco_with_env(
         &["--color", "always", "list", "--json"],
         &chocolatey_home,
         Some(port),
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
     );
-    let limit_output = run_roco(
+    let limit_output = run_roco_with_env(
         &["--color", "always", "outdated", "Firefox", "-r"],
         &chocolatey_home,
         Some(port),
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
     );
 
     let json_stdout = stdout(&json_output);
@@ -256,6 +472,74 @@ fn server_json_and_limitoutput_remain_ansi_free() {
     assert!(!has_ansi_escape(&json_stdout), "json output must stay plain text");
     assert!(!has_ansi_escape(&limit_stdout), "limitoutput must stay plain text");
     assert!(json_stdout.contains("\"schema_version\":1"));
+
+    let _ = server.kill();
+    let _ = server.wait();
+}
+
+#[test]
+fn live_tls_source_request_denies_then_succeeds_after_enrollment() {
+    let (_workspace, client_home, server_root, fake_home, _) = prepare_tls_test_roots();
+
+    let client_xdg = client_home.to_string_lossy().to_string();
+    let server_trust = server_root.to_string_lossy().to_string();
+
+    let gen_cert_output = run_roco_with_env(
+        &["server", "--gen-cert"],
+        &fake_home,
+        None,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+    assert!(
+        gen_cert_output.status.success(),
+        "certificate generation failed: stdout={:?} stderr={:?}",
+        stdout(&gen_cert_output),
+        stderr(&gen_cert_output)
+    );
+
+    let client_cfg = rocolatey_lib::server::ClientTlsConfig::new(
+        client_home
+            .join("rocolatey/client/client.crt.pem"),
+        client_home
+            .join("rocolatey/client/client.key.pem"),
+        client_home
+            .join("rocolatey/client/known_server_keys"),
+    );
+    let server_cfg = rocolatey_lib::server::ServerTlsConfig::new(
+        server_root.join("server.crt.pem"),
+        server_root.join("server.key.pem"),
+        server_root.join("authorized_keys"),
+    );
+    let server_cert = read_server_certificate_pem(&server_cfg.cert_path);
+    fs::write(&client_cfg.known_server_keys_path, server_cert).expect("write pinned server cert");
+
+    let port = reserve_free_port();
+    let mut server = start_server_with_env(
+        port,
+        &fake_home,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+
+    let deny_output = wait_for_remote_tls_deny(
+        &fake_home,
+        port,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+    let deny_stderr = stderr(&deny_output);
+    assert!(deny_stderr.contains("NotEnrolledClient") || deny_stderr.contains("empty enrollment mode"));
+
+    let client_fingerprint = read_client_certificate_fingerprint(&client_cfg.cert_path);
+    fs::write(&server_cfg.authorized_keys_path, format!("{}\n", client_fingerprint))
+        .expect("write enrolled client fingerprint");
+
+    let success_output = wait_for_remote_tls_success(
+        &fake_home,
+        port,
+        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+    );
+    let success_stdout = stdout(&success_output);
+    assert!(success_output.status.success(), "source request should succeed after enrollment");
+    assert!(success_stdout.contains("schema_version") || success_stdout.contains("local-dev"));
 
     let _ = server.kill();
     let _ = server.wait();

@@ -4,6 +4,7 @@ use rocolatey_lib::server::RocoServerPackagesResponse;
 
 use crate::output_style;
 use crate::server_contract::validate_schema_version;
+use crate::server_deny::print_deny_if_present;
 
 pub async fn bad(matches: &clap::ArgMatches) {
     rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
@@ -26,6 +27,9 @@ async fn bad_remote(limitoutput: bool, json: bool) {
 
     match res {
         Some(s) => {
+            if print_deny_if_present("/bad/json", &s) {
+                return;
+            }
             if json {
                 println!("{}", s);
                 return;

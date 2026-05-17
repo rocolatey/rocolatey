@@ -8,10 +8,12 @@ mod command_license;
 mod command_list;
 mod command_outdated;
 mod command_search;
+mod command_server;
 mod command_source;
 mod command_uninstall;
 mod command_upgrade;
 mod server_contract;
+mod server_deny;
 
 use output_style::ColorMode;
 
@@ -50,6 +52,7 @@ async fn main() {
         Some(("outdated", matches)) => command_outdated::outdated(matches).await,
         Some(("source", matches)) => command_source::source(matches).await,
         Some(("search", matches)) => command_search::search(matches).await,
+        Some(("server", matches)) => command_server::server(matches).await,
         Some(("uninstall", matches)) => command_uninstall::uninstall(matches).await,
         Some(("upgrade", matches)) => command_upgrade::upgrade(matches).await,
         _ => {

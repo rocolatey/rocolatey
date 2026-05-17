@@ -37,6 +37,9 @@ _roco() {
             roco,search)
                 cmd="roco__search"
                 ;;
+            roco,server)
+                cmd="roco__server"
+                ;;
             roco,source)
                 cmd="roco__source"
                 ;;
@@ -67,6 +70,9 @@ _roco() {
             roco__help,search)
                 cmd="roco__help__search"
                 ;;
+            roco__help,server)
+                cmd="roco__help__server"
+                ;;
             roco__help,source)
                 cmd="roco__help__source"
                 ;;
@@ -83,7 +89,7 @@ _roco() {
 
     case "${cmd}" in
         roco)
-            opts="-h -V --color --help --version list bad outdated source search license upgrade install uninstall help"
+            opts="-h -V --color --help --version list bad outdated source search license upgrade install uninstall server help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -119,7 +125,7 @@ _roco() {
             return 0
             ;;
         roco__help)
-            opts="list bad outdated source search license upgrade install uninstall help"
+            opts="list bad outdated source search license upgrade install uninstall server help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -217,6 +223,20 @@ _roco() {
             return 0
             ;;
         roco__help__search)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        roco__help__server)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -346,6 +366,24 @@ _roco() {
             ;;
         roco__search)
             opts="-r -v -h --limitoutput --json --verbose --color --help <pkg>"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        roco__server)
+            opts="-v -h --setup-tls-help --gen-cert --force --bootstrap-local-trust --verbose --color --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
