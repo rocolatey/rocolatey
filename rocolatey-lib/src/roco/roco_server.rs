@@ -1,5 +1,6 @@
 use reqwest::header::CONTENT_TYPE;
 use serde_json;
+use std::time::Duration;
 
 use crate::server::{JobStatus, RocoServerChocoCommandRequest, ClientTlsConfig};
 use reqwest::ClientBuilder;
@@ -56,6 +57,9 @@ fn build_client_with_config(
 
         let builder = ClientBuilder::new()
             .tls_built_in_root_certs(false)
+            // Bound handshake/response time so TLS failures are surfaced promptly.
+            .connect_timeout(Duration::from_secs(3))
+            .timeout(Duration::from_secs(10))
             .add_root_certificate(cert);
 
         Ok(builder.build()?)
