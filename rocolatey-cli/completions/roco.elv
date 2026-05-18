@@ -32,6 +32,7 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand upgrade 'upgrade outdated choco packages (using choco.exe)'
             cand install 'install choco packages (using choco.exe)'
             cand uninstall 'uninstall choco packages (using choco.exe)'
+            cand server 'manage roco server configuration and TLS setup'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;list'= {
@@ -133,6 +134,17 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
+        &'roco;server'= {
+            cand --color 'Control color output: auto (default), always, or never. -r always stays uncolored'
+            cand --setup-tls-help 'display TLS setup status and enrollment guidance'
+            cand --gen-cert 'generate TLS certificates for client and server'
+            cand --force 'regenerate certificates even if they exist (creates timestamped backups)'
+            cand --bootstrap-local-trust 'bootstrap local key exchange and enroll current account client fingerprint on this host'
+            cand -v 'be verbose'
+            cand --verbose 'be verbose'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
         &'roco;help'= {
             cand list 'list local installed packages'
             cand bad 'list packages in lib-bad/'
@@ -143,6 +155,7 @@ set edit:completion:arg-completer[roco] = {|@words|
             cand upgrade 'upgrade outdated choco packages (using choco.exe)'
             cand install 'install choco packages (using choco.exe)'
             cand uninstall 'uninstall choco packages (using choco.exe)'
+            cand server 'manage roco server configuration and TLS setup'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'roco;help;list'= {
@@ -162,6 +175,8 @@ set edit:completion:arg-completer[roco] = {|@words|
         &'roco;help;install'= {
         }
         &'roco;help;uninstall'= {
+        }
+        &'roco;help;server'= {
         }
         &'roco;help;help'= {
         }

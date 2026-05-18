@@ -1,5 +1,7 @@
 use clap::{Arg, Command};
+mod authorized_keys_runtime;
 mod serverimpl;
+mod tls;
 
 use std::env;
 use std::error::Error;
@@ -84,9 +86,201 @@ async fn run_server(bind_addr: &str, bind_port: u16) {
     println!(" server binds on ip: {}", bind_addr);
     println!(" server binds on port: {}", bind_port);
 
+    // Bootstrap TLS materials if they don't exist (MANDATORY - fail-closed on TLS errors)
+    match tls::ensure_server_tls_materials() {
+        Ok(_) => {
+            println!(" server TLS materials ready");
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::Bootstrap,
+                    "Server TLS materials bootstrapped and ready",
+                ),
+            );
+        }
+        Err(e) => {
+            eprintln!("Failed to bootstrap TLS materials: {}", e);
+            eprintln!("Secure-only transport requires valid TLS materials. Set ROCO_SERVER_TRUST_DIR to a writable directory.");
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::Bootstrap,
+                    format!("FAIL-CLOSED: bootstrap failed: {}", e),
+                ),
+            );
+            std::process::exit(1);
+        }
+    }
+
+    // Prune audit log at startup to enforce 14-day retention policy
+    if let Err(e) = rocolatey_lib::server::audit::prune_audit_log_if_due(
+        &rocolatey_lib::server::audit::server_audit_log_path(),
+    ) {
+        eprintln!("[AUDIT] prune failed (non-fatal): {}", e);
+    }
+
+    // Check if authorized_keys is valid (empty file is OK, unreadable/invalid is not)
+    let tls_config = rocolatey_lib::server::ServerTlsConfig::default();
+    match rocolatey_lib::bootstrap::validate_authorized_keys_file(&tls_config) {
+        Ok(entry_count) if entry_count == 0 => {
+            println!(" server in EMPTY ENROLLMENT MODE (no authorized clients)");
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::Enrollment,
+                    "Server started in empty enrollment mode (0 authorized clients)",
+                ),
+            );
+        }
+        Ok(entry_count) => {
+            println!(" server has {} authorized client(s)", entry_count);
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::Enrollment,
+                    format!("Server started with {} authorized client(s)", entry_count),
+                ),
+            );
+        }
+        Err(e) => {
+            eprintln!("Failed to validate authorized_keys file: {}", e);
+            eprintln!("Path: {}", tls_config.authorized_keys_path.display());
+            std::process::exit(1);
+        }
+    }
+
+    match rocolatey_lib::bootstrap::auto_rotate_server_tls_if_due(&tls_config) {
+        Ok(true) => {
+            println!(
+                " server identity auto-rotated from deterministic schedule (90d + jitter), overlap window active"
+            );
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::Rotation,
+                    "Server identity auto-rotated per deterministic schedule (90d + jitter). Overlap window active.",
+                ),
+            );
+        }
+        Ok(false) => {}
+        Err(e) => {
+            eprintln!("Fail-closed: automatic rotation check failed: {}", e);
+            std::process::exit(1);
+        }
+    }
+
+    match rocolatey_lib::bootstrap::validate_server_continuity_proof(&tls_config) {
+        Ok(Some(proof)) => {
+            let old_short = rocolatey_lib::server::authorization::short_fingerprint(
+                &proof.previous_identity_fingerprint,
+            );
+            let new_short = rocolatey_lib::server::authorization::short_fingerprint(
+                &proof.new_identity_fingerprint,
+            );
+            println!(
+                " server continuity proof verified: {} -> {}",
+                old_short, new_short
+            );
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::ContinuityCheck,
+                    format!(
+                        "Continuity proof verified: {} -> {} (full: {} -> {})",
+                        old_short,
+                        new_short,
+                        proof.previous_identity_fingerprint,
+                        proof.new_identity_fingerprint
+                    ),
+                ),
+            );
+        }
+        Ok(None) => {}
+        Err(e) => {
+            eprintln!("Fail-closed: continuity proof validation failed: {}", e);
+            std::process::exit(1);
+        }
+    }
+
+    match std::fs::read(&tls_config.cert_path)
+        .ok()
+        .map(|pem| rocolatey_lib::server::authorization::evaluate_certificate_time_now(&pem))
+    {
+        Some(Ok(rocolatey_lib::server::authorization::CertificateTimeStatus::Valid)) => {}
+        Some(Ok(rocolatey_lib::server::authorization::CertificateTimeStatus::Expired)) => {
+            eprintln!("Fail-closed: server certificate expired.");
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::ExpiryFailure,
+                    "FAIL-CLOSED: server certificate expired at startup. Service cannot start.",
+                ),
+            );
+            std::process::exit(1);
+        }
+        Some(Ok(rocolatey_lib::server::authorization::CertificateTimeStatus::TimeSkewExceeded)) => {
+            eprintln!("Fail-closed: system clock skew exceeds 8 minutes.");
+            rocolatey_lib::server::audit::emit_audit_event(
+                &rocolatey_lib::server::audit::server_audit_log_path(),
+                &rocolatey_lib::server::audit::AuditEvent::new(
+                    rocolatey_lib::server::audit::AuditEventKind::ExpiryFailure,
+                    "FAIL-CLOSED: system clock skew exceeds 8 minutes at startup. Check NTP synchronization.",
+                ),
+            );
+            std::process::exit(1);
+        }
+        Some(Err(e)) => {
+            eprintln!("Fail-closed: could not validate server certificate time: {}", e);
+            std::process::exit(1);
+        }
+        None => {}
+    }
+
+    let auth_runtime = match authorized_keys_runtime::AuthorizedKeysRuntime::from_file(
+        &tls_config.authorized_keys_path,
+    ) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!(
+                "Failed to initialize authorized_keys runtime from {}: {}",
+                tls_config.authorized_keys_path.display(),
+                e
+            );
+            std::process::exit(1);
+        }
+    };
+    auth_runtime.start_watcher();
+    serverimpl::install_authorization_runtime(auth_runtime);
+
     let warp_filter = serverimpl::create_warp_filter();
     let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
-    warp::serve(warp_filter).run((server_ip, bind_port)).await;
+    let socket_addr = std::net::SocketAddr::new(std::net::IpAddr::V4(server_ip), bind_port);
+
+    // Secure-only transport: TLS materials must exist and load successfully.
+    if tls::tls_materials_exist(&tls_config.cert_path, &tls_config.key_path) {
+        println!(" server using TLS (secure transport)");
+        match tls::load_server_tls_config(&tls_config.cert_path, &tls_config.key_path) {
+            Ok(_) => {
+                warp::serve(warp_filter)
+                    .tls()
+                    .cert_path(&tls_config.cert_path)
+                    .key_path(&tls_config.key_path)
+                    .run(socket_addr)
+                    .await;
+            }
+            Err(e) => {
+                eprintln!("Failed to load TLS config: {}", e);
+                std::process::exit(1);
+            }
+        }
+    } else {
+        eprintln!(
+            "Fail-closed: TLS materials not found at {} and {}",
+            tls_config.cert_path.display(),
+            tls_config.key_path.display()
+        );
+        std::process::exit(1);
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -191,17 +385,100 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
 
             rt.block_on(async move {
+                let tls_config = rocolatey_lib::server::ServerTlsConfig::default();
+
+                match rocolatey_lib::bootstrap::validate_authorized_keys_file(&tls_config) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("Fail-closed: invalid authorized_keys file: {}", e);
+                        return;
+                    }
+                }
+
+                match rocolatey_lib::bootstrap::auto_rotate_server_tls_if_due(&tls_config) {
+                    Ok(true) => {
+                        eprintln!(" service identity auto-rotated from deterministic schedule");
+                    }
+                    Ok(false) => {}
+                    Err(e) => {
+                        eprintln!("Fail-closed: automatic rotation check failed: {}", e);
+                        return;
+                    }
+                }
+
+                match rocolatey_lib::bootstrap::validate_server_continuity_proof(&tls_config) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("Fail-closed: continuity proof validation failed: {}", e);
+                        return;
+                    }
+                }
+
+                match std::fs::read(&tls_config.cert_path)
+                    .ok()
+                    .map(|pem| rocolatey_lib::server::authorization::evaluate_certificate_time_now(&pem))
+                {
+                    Some(Ok(rocolatey_lib::server::authorization::CertificateTimeStatus::Valid)) => {}
+                    Some(Ok(rocolatey_lib::server::authorization::CertificateTimeStatus::Expired)) => {
+                        eprintln!("Fail-closed: server certificate expired.");
+                        return;
+                    }
+                    Some(Ok(rocolatey_lib::server::authorization::CertificateTimeStatus::TimeSkewExceeded)) => {
+                        eprintln!("Fail-closed: system clock skew exceeds 8 minutes.");
+                        return;
+                    }
+                    Some(Err(e)) => {
+                        eprintln!("Fail-closed: could not validate server certificate time: {}", e);
+                        return;
+                    }
+                    None => {}
+                }
+
+                if let Ok(auth_runtime) =
+                    authorized_keys_runtime::AuthorizedKeysRuntime::from_file(&tls_config.authorized_keys_path)
+                {
+                    auth_runtime.start_watcher();
+                    serverimpl::install_authorization_runtime(auth_runtime);
+                } else {
+                    eprintln!(
+                        "[HIGH] service startup could not initialize authorized_keys watcher runtime."
+                    );
+                }
+
                 let warp_filter = serverimpl::create_warp_filter();
                 let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
                 let socket_addr =
                     std::net::SocketAddr::new(std::net::IpAddr::V4(server_ip), bind_port);
-                let (_addr, server_future) =
-                    warp::serve(warp_filter).bind_with_graceful_shutdown(socket_addr, async move {
-                        while running.load(Ordering::SeqCst) {
-                            tokio::time::sleep(Duration::from_millis(200)).await;
+
+                // Secure-only transport: TLS materials must exist and load successfully.
+                if tls::tls_materials_exist(&tls_config.cert_path, &tls_config.key_path) {
+                    eprintln!(" service using TLS (secure transport)");
+                    match tls::load_server_tls_config(&tls_config.cert_path, &tls_config.key_path) {
+                        Ok(_) => {
+                            let (_addr, server_future) = warp::serve(warp_filter)
+                                .tls()
+                                .cert_path(&tls_config.cert_path)
+                                .key_path(&tls_config.key_path)
+                                .bind_with_graceful_shutdown(socket_addr, async move {
+                                    while running.load(Ordering::SeqCst) {
+                                        tokio::time::sleep(Duration::from_millis(200)).await;
+                                    }
+                                });
+                            server_future.await;
                         }
-                    });
-                server_future.await;
+                        Err(e) => {
+                            eprintln!("Failed to load TLS config: {}", e);
+                            return;
+                        }
+                    }
+                } else {
+                    eprintln!(
+                        "Fail-closed: service TLS materials not found at {} and {}",
+                        tls_config.cert_path.display(),
+                        tls_config.key_path.display()
+                    );
+                    return;
+                }
             });
         }
 

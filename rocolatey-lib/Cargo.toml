@@ -11,17 +11,26 @@ edition = "2021"
 quick-xml = "0.31.0"
 glob = "0.3.1"
 futures = "0.3.30"
-reqwest = "0.11.23"
+reqwest = { version = "0.11.23", features = ["rustls-tls"] }
+rustls = "0.21"
+rustls-pemfile = "2.0"
+webpki-roots = "0.25"
 semver = "1.0.21"
 regex = "1.10.2"
 walkdir = "2.4.0"
 http-auth-basic = "0.3.3"
 tokio = { version = "1.38.2", features = ["full"] }
 serde_with = "3.4.0"
-serde = "1.0.195"
+serde = { version = "1.0.195", features = ["derive"] }
 num_cpus = "1.16.0"
 zip = "0.6"
 serde_json = { version = "1.0.149", default-features = false, features = [
   "alloc",
 ] }
 uuid = { version = "1.20.0", features = ["v4", "serde"] }
+rcgen = "0.11"
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.22"
+time = "0.3"
+x509-parser = "0.16"

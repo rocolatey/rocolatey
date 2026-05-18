@@ -3,6 +3,7 @@ use rocolatey_lib::server::RocoServerFeedsResponse;
 
 use crate::output_style;
 use crate::server_contract::validate_schema_version;
+use crate::server_deny::print_deny_if_present;
 
 pub async fn source(matches: &clap::ArgMatches) {
     rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
@@ -25,6 +26,9 @@ async fn source_remote(limitoutput: bool, json: bool) {
 
     match res {
         Some(s) => {
+            if print_deny_if_present("/source/json", &s) {
+                return;
+            }
             if json {
                 println!("{}", s);
                 return;

@@ -161,6 +161,34 @@ a Chocolatey package manager interface.")
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose)
     )
+    .subcommand(
+        Command::new("server").about("manage roco server configuration and TLS setup")
+        .arg(
+            Arg::new("setup-tls-help")
+            .long("setup-tls-help")
+            .action(ArgAction::SetTrue)
+            .help("display TLS setup status and enrollment guidance")
+        )
+        .arg(
+            Arg::new("gen-cert")
+            .long("gen-cert")
+            .action(ArgAction::SetTrue)
+            .help("generate TLS certificates for client and server")
+        )
+        .arg(
+            Arg::new("force")
+            .long("force")
+            .action(ArgAction::SetTrue)
+            .help("regenerate certificates even if they exist (creates timestamped backups)")
+        )
+        .arg(
+          Arg::new("bootstrap-local-trust")
+          .long("bootstrap-local-trust")
+          .action(ArgAction::SetTrue)
+          .help("bootstrap local key exchange and enroll current account client fingerprint on this host")
+        )
+        .arg(&common_arg_verbose)
+    )
 }
 
 #[cfg(test)]

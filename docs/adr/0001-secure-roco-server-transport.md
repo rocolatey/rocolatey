@@ -1,0 +1,3 @@
+# Secure-only mTLS with explicit key allowlisting for roco to rocolatey-server
+
+We will secure all roco to rocolatey-server traffic with mutual TLS, require explicit client allowlisting via an authorized keys file of SPKI SHA-256 fingerprints, and pin server SPKI on clients using known-host style trust. Both sides auto-generate keys on first start, auto-rotate every 90 days with at least one month overlap and signed continuity proofs, and fail closed on trust or expiry errors except for a tightly scoped audited emergency override. Plaintext fallback and backward compatibility mode are removed; server may start with empty enrollment and deny all requests with actionable guidance until admins enroll clients.
