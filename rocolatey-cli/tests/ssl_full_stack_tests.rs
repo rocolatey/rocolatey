@@ -208,6 +208,7 @@ fn wait_for_remote_request_without_refused(
         let output = run_roco_with_env(args, chocolatey_home, Some(port), extra_env);
         let output_stderr = stderr(&output);
 
+        // Retry only for startup transport refusal; TLS verification failures should return immediately.
         if !output_stderr.contains("Connection refused")
             && !output_stderr.contains("tcp connect error")
         {
