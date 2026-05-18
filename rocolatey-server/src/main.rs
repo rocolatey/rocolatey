@@ -12,6 +12,8 @@ use std::path::PathBuf;
 static SERVICE_BIND_ADDR: std::sync::OnceLock<String> = std::sync::OnceLock::new();
 #[cfg(windows)]
 static SERVICE_BIND_PORT: std::sync::OnceLock<u16> = std::sync::OnceLock::new();
+#[cfg(windows)]
+const WINDOWS_SERVICE_NAME: &str = "Rocolatey-Server";
 
 /// Redirect stdout and stderr into a logfile under the OS temporary directory.
 fn init_log_redirect() {
@@ -321,7 +323,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let running_clone = running.clone();
 
             let status_handle =
-                match service_control_handler::register("RocolateyServer", move |control_event| {
+                match service_control_handler::register(WINDOWS_SERVICE_NAME, move |control_event| {
                     match control_event {
                         ServiceControl::Stop => {
                             running_clone.store(false, Ordering::SeqCst);
@@ -517,7 +519,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let _ = SERVICE_BIND_ADDR.set(bind_addr.to_string());
         let _ = SERVICE_BIND_PORT.set(bind_port);
 
-        match service_dispatcher::start("RocolateyServer", service_main_dispatcher) {
+        match service_dispatcher::start(WINDOWS_SERVICE_NAME, service_main_dispatcher) {
             Ok(()) => return Ok(()),
             Err(e) => {
                 eprintln!(
