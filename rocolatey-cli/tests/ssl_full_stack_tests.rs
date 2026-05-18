@@ -210,7 +210,6 @@ fn wait_for_remote_request_without_refused(
 
         if !output_stderr.contains("Connection refused")
             && !output_stderr.contains("tcp connect error")
-            && !output_stderr.contains("error trying to connect")
         {
             return output;
         }
