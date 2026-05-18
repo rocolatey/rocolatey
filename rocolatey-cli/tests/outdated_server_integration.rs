@@ -285,18 +285,35 @@ fn prepare_tls_test_roots() -> (PathBuf, PathBuf, PathBuf, PathBuf, PathBuf) {
     (workspace, client_home, server_root, fake_home, fake_repo)
 }
 
+#[cfg(windows)]
+fn tls_test_env<'a>(client_config_root: &'a str, server_trust: &'a str) -> [(&'static str, &'a str); 2] {
+    [
+        ("APPDATA", client_config_root),
+        ("ROCO_SERVER_TRUST_DIR", server_trust),
+    ]
+}
+
+#[cfg(not(windows))]
+fn tls_test_env<'a>(client_config_root: &'a str, server_trust: &'a str) -> [(&'static str, &'a str); 2] {
+    [
+        ("XDG_CONFIG_HOME", client_config_root),
+        ("ROCO_SERVER_TRUST_DIR", server_trust),
+    ]
+}
+
 fn assert_local_and_server_match(chocolatey_home: &Path, args: &[&str], expect_ansi: bool) {
     // Set up TLS for server (required by secure-only transport model)
     let (_workspace, client_home, server_root, _fake_home, _) = prepare_tls_test_roots();
-    let client_xdg = client_home.to_string_lossy().to_string();
+    let client_config_root = client_home.to_string_lossy().to_string();
     let server_trust = server_root.to_string_lossy().to_string();
+    let shared_env = tls_test_env(&client_config_root, &server_trust);
 
     // Generate TLS certificates
     let gen_cert_output = run_roco_with_env(
         &["server", "--gen-cert"],
         chocolatey_home,
         None,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     assert!(
         gen_cert_output.status.success(),
@@ -327,14 +344,14 @@ fn assert_local_and_server_match(chocolatey_home: &Path, args: &[&str], expect_a
     let mut server = start_server_with_env(
         port,
         chocolatey_home,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
 
     // Wait for TLS server to be ready
     let ready_output = wait_for_remote_tls_success(
         chocolatey_home,
         port,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     assert!(
         ready_output.status.success(),
@@ -350,7 +367,7 @@ fn assert_local_and_server_match(chocolatey_home: &Path, args: &[&str], expect_a
         args,
         chocolatey_home,
         Some(port),
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
 
     let local_stdout = stdout(&local);
@@ -432,15 +449,16 @@ fn server_json_and_limitoutput_remain_ansi_free() {
     
     // Set up TLS for server (required by secure-only transport model)
     let (_workspace, client_home, server_root, _fake_home, _) = prepare_tls_test_roots();
-    let client_xdg = client_home.to_string_lossy().to_string();
+    let client_config_root = client_home.to_string_lossy().to_string();
     let server_trust = server_root.to_string_lossy().to_string();
+    let shared_env = tls_test_env(&client_config_root, &server_trust);
 
     // Generate TLS certificates
     let gen_cert_output = run_roco_with_env(
         &["server", "--gen-cert"],
         &chocolatey_home,
         None,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     assert!(gen_cert_output.status.success(), "certificate generation failed");
 
@@ -467,14 +485,14 @@ fn server_json_and_limitoutput_remain_ansi_free() {
     let mut server = start_server_with_env(
         port,
         &chocolatey_home,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
 
     // Wait for TLS server to be ready
     let ready_output = wait_for_remote_tls_success(
         &chocolatey_home,
         port,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     assert!(ready_output.status.success(), "server did not become ready with TLS");
 
@@ -482,13 +500,13 @@ fn server_json_and_limitoutput_remain_ansi_free() {
         &["--color", "always", "list", "--json"],
         &chocolatey_home,
         Some(port),
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     let limit_output = run_roco_with_env(
         &["--color", "always", "outdated", "Firefox", "-r"],
         &chocolatey_home,
         Some(port),
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
 
     let json_stdout = stdout(&json_output);
@@ -508,14 +526,15 @@ fn server_json_and_limitoutput_remain_ansi_free() {
 fn live_tls_source_request_denies_then_succeeds_after_enrollment() {
     let (_workspace, client_home, server_root, fake_home, _) = prepare_tls_test_roots();
 
-    let client_xdg = client_home.to_string_lossy().to_string();
+    let client_config_root = client_home.to_string_lossy().to_string();
     let server_trust = server_root.to_string_lossy().to_string();
+    let shared_env = tls_test_env(&client_config_root, &server_trust);
 
     let gen_cert_output = run_roco_with_env(
         &["server", "--gen-cert"],
         &fake_home,
         None,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     assert!(
         gen_cert_output.status.success(),
@@ -544,13 +563,13 @@ fn live_tls_source_request_denies_then_succeeds_after_enrollment() {
     let mut server = start_server_with_env(
         port,
         &fake_home,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
 
     let deny_output = wait_for_remote_tls_deny(
         &fake_home,
         port,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     let deny_stderr = stderr(&deny_output);
     assert!(deny_stderr.contains("NotEnrolledClient") || deny_stderr.contains("empty enrollment mode"));
@@ -562,7 +581,7 @@ fn live_tls_source_request_denies_then_succeeds_after_enrollment() {
     let success_output = wait_for_remote_tls_success(
         &fake_home,
         port,
-        &[("XDG_CONFIG_HOME", &client_xdg), ("ROCO_SERVER_TRUST_DIR", &server_trust)],
+        &shared_env,
     );
     let success_stdout = stdout(&success_output);
     assert!(success_output.status.success(), "source request should succeed after enrollment");
