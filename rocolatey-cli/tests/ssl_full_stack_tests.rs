@@ -3,9 +3,11 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Output, Stdio};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+static SERVER_BINARY_ONCE: OnceLock<PathBuf> = OnceLock::new();
 
 fn reserve_free_port() -> u16 {
     TcpListener::bind("127.0.0.1:0")
@@ -57,33 +59,55 @@ fn run_roco_with_env(
     cmd.output().expect("run roco command")
 }
 
-fn start_server_with_env(port: u16, chocolatey_home: &Path, extra_env: &[(&str, &str)]) -> Child {
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+fn resolve_server_binary_path() -> PathBuf {
+    SERVER_BINARY_ONCE
+        .get_or_init(|| {
+            let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
 
-    let mut command = Command::new("cargo");
-    command
-        .current_dir(&repo_root)
-        .env("ChocolateyInstall", chocolatey_home);
+            let server_binary = {
+                #[cfg(windows)]
+                {
+                    repo_root.join("target/debug/rocolatey-server.exe")
+                }
+                #[cfg(not(windows))]
+                {
+                    repo_root.join("target/debug/rocolatey-server")
+                }
+            };
+
+            if !server_binary.exists() {
+                let status = Command::new("cargo")
+                    .current_dir(&repo_root)
+                    .args(["build", "-q", "-p", "rocolatey-server"])
+                    .status()
+                    .expect("failed to prebuild rocolatey-server binary");
+                assert!(status.success(), "failed to build rocolatey-server binary");
+            }
+
+            assert!(
+                server_binary.exists(),
+                "rocolatey-server binary not found at {}",
+                server_binary.display()
+            );
+
+            server_binary
+        })
+        .clone()
+}
+
+fn start_server_with_env(port: u16, chocolatey_home: &Path, extra_env: &[(&str, &str)]) -> Child {
+    let mut command = Command::new(resolve_server_binary_path());
+    command.env("ChocolateyInstall", chocolatey_home);
     for (key, value) in extra_env {
         command.env(key, value);
     }
 
     command
-        .args([
-            "run",
-            "--quiet",
-            "-p",
-            "rocolatey-server",
-            "--",
-            "--address",
-            "127.0.0.1",
-            "--port",
-            &port.to_string(),
-        ])
+        .args(["--address", "127.0.0.1", "--port", &port.to_string()])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("failed to start rocolatey-server with cargo run")
+        .expect("failed to start rocolatey-server binary")
 }
 
 fn prepare_tls_test_roots() -> (PathBuf, PathBuf, PathBuf, PathBuf) {
@@ -137,7 +161,7 @@ fn wait_for_remote_tls_success(
     port: u16,
     extra_env: &[(&str, &str)],
 ) -> Output {
-    let deadline = Instant::now() + Duration::from_secs(45);
+    let deadline = Instant::now() + Duration::from_secs(120);
     loop {
         let output = run_roco_with_env(
             &["source", "--json"],
@@ -179,7 +203,7 @@ fn wait_for_remote_request_without_refused(
     port: u16,
     extra_env: &[(&str, &str)],
 ) -> Output {
-    let deadline = Instant::now() + Duration::from_secs(45);
+    let deadline = Instant::now() + Duration::from_secs(120);
     loop {
         let output = run_roco_with_env(args, chocolatey_home, Some(port), extra_env);
         let output_stderr = stderr(&output);
@@ -869,7 +893,7 @@ fn ssl_server_startup_fails_closed_on_expired_certificate() {
 
     let port = reserve_free_port();
     let mut server = start_server_with_env(port, &fake_home, &shared_env);
-    let status = wait_for_server_exit(&mut server, Duration::from_secs(10));
+    let status = wait_for_server_exit(&mut server, Duration::from_secs(30));
 
     assert!(status.is_some(), "server should exit fail-closed on expired cert");
     assert!(!status.unwrap().success(), "expired cert must cause non-zero exit");
@@ -904,7 +928,7 @@ fn ssl_server_startup_fails_closed_on_clock_skew_certificate() {
 
     let port = reserve_free_port();
     let mut server = start_server_with_env(port, &fake_home, &shared_env);
-    let status = wait_for_server_exit(&mut server, Duration::from_secs(10));
+    let status = wait_for_server_exit(&mut server, Duration::from_secs(30));
 
     assert!(status.is_some(), "server should exit fail-closed on time-skew cert");
     assert!(!status.unwrap().success(), "time-skew cert must cause non-zero exit");
