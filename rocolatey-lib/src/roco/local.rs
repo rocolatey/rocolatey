@@ -490,7 +490,7 @@ mod tests {
 
         let mut pkg_path = None;
         for entry in std::fs::read_dir(&choco_lib_path)
-            .expect("failed to enumerate package directories under Chocolatey lib dir")
+            .expect("failed to read Chocolatey lib directory")
         {
             let dir_path = entry
                 .expect("failed to read package directory entry")
@@ -500,7 +500,7 @@ mod tests {
             }
 
             for file_entry in std::fs::read_dir(&dir_path)
-                .expect("failed to enumerate files in package directory")
+                .expect("failed to read package directory")
             {
                 let file_path = file_entry.expect("failed to read package file entry").path();
                 let is_chocolatey_nuspec = file_path
