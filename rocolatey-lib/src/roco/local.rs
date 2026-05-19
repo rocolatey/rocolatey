@@ -520,12 +520,8 @@ mod tests {
         let pkg_path = pkg_path.expect("Chocolatey nuspec file not found under lib");
 
         let pkg = get_package_from_nuspec(&pkg_path);
-        assert_eq!(pkg.id.to_lowercase(), "chocolatey");
-        assert!(
-            regex::Regex::new(r"^\d+\.\d+(\.\d+)?([-.+].+)?$")
-                .unwrap()
-                .is_match(&pkg.version)
-        );
+        assert_eq!(pkg.id, "Chocolatey");
+        assert_eq!(pkg.version, "2.0");
     }
 
     #[test]
