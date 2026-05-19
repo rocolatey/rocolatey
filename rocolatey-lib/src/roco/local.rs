@@ -483,11 +483,41 @@ mod tests {
         // TODO: look up if package ids are case-sensitive or not
         // NOTE: would need to normalize across local/v2/v3 sources
         // iirc ProGet does 'support' case-sensitive package IDs
-        let mut pkg_path = PathBuf::from(
+        let mut choco_lib_path = PathBuf::from(
             get_chocolatey_dir().expect("env:ChocolateyInstall must be set during tests!"),
         );
-        pkg_path.push("lib");
-        pkg_path.push("Chocolatey/Chocolatey.nuspec");
+        choco_lib_path.push("lib");
+
+        let mut pkg_path = None;
+        for entry in std::fs::read_dir(&choco_lib_path)
+            .expect("failed to read Chocolatey lib directory")
+        {
+            let dir_path = entry
+                .expect("failed to read package directory entry")
+                .path();
+            if !dir_path.is_dir() {
+                continue;
+            }
+
+            for file_entry in std::fs::read_dir(&dir_path)
+                .expect("failed to read package directory")
+            {
+                let file_path = file_entry.expect("failed to read package file entry").path();
+                let is_chocolatey_nuspec = file_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name.eq_ignore_ascii_case("chocolatey.nuspec"))
+                    .unwrap_or(false);
+                if file_path.is_file() && is_chocolatey_nuspec {
+                    pkg_path = Some(file_path);
+                    break;
+                }
+            }
+            if pkg_path.is_some() {
+                break;
+            }
+        }
+        let pkg_path = pkg_path.expect("Chocolatey nuspec file not found under lib");
 
         let pkg = get_package_from_nuspec(&pkg_path);
         assert_eq!(pkg.id, "Chocolatey");

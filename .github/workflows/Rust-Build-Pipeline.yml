@@ -31,6 +31,9 @@ jobs:
       run: cargo build --verbose
 
     - name: Run tests on ${{ matrix.os }}
+      env:
+        ChocolateyInstall: test/fake_choco_home
+        RocolateyTestRoot: test/fake_choco_home
       run: cargo test --verbose
       
   build-test-nightly:
@@ -55,6 +58,9 @@ jobs:
         toolchain: nightly
         override: true
     - uses: actions-rs/cargo@v1.0.3
+      env:
+        ChocolateyInstall: test/fake_choco_home
+        RocolateyTestRoot: test/fake_choco_home
       with: 
         command: test
         

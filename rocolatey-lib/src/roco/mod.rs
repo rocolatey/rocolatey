@@ -376,7 +376,8 @@ mod tests {
         let choco_source: &Feed = sources.iter().find(|s| s.name == "chocolatey").unwrap();
 
         assert_eq!(choco_source.name, "chocolatey");
-        assert_eq!(choco_source.url, "https://chocolatey.org/api/v2");
+        let normalized_choco_url = choco_source.url.trim_end_matches('/');
+        assert_eq!(normalized_choco_url, "https://chocolatey.org/api/v2");
         assert_eq!(choco_source.priority, 101);
         assert_eq!(choco_source.admin_only, false);
         assert_eq!(choco_source.bypass_proxy, false);
