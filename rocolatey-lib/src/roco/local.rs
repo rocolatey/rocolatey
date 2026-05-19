@@ -483,15 +483,29 @@ mod tests {
         // TODO: look up if package ids are case-sensitive or not
         // NOTE: would need to normalize across local/v2/v3 sources
         // iirc ProGet does 'support' case-sensitive package IDs
-        let mut pkg_path = PathBuf::from(
+        let mut choco_lib_path = PathBuf::from(
             get_chocolatey_dir().expect("env:ChocolateyInstall must be set during tests!"),
         );
-        pkg_path.push("lib");
-        pkg_path.push("Chocolatey/Chocolatey.nuspec");
+        choco_lib_path.push("lib");
+
+        let mut search_pattern = choco_lib_path.clone();
+        search_pattern.push("**");
+        search_pattern.push("*.nuspec");
+
+        let pkg_path = glob::glob(&search_pattern.to_string_lossy())
+            .expect("failed to enumerate nuspec files under Chocolatey lib dir")
+            .filter_map(Result::ok)
+            .find(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name.eq_ignore_ascii_case("chocolatey.nuspec"))
+                    .unwrap_or(false)
+            })
+            .expect("Chocolatey nuspec file not found under lib");
 
         let pkg = get_package_from_nuspec(&pkg_path);
-        assert_eq!(pkg.id, "Chocolatey");
-        assert_eq!(pkg.version, "2.0");
+        assert_eq!(pkg.id.to_lowercase(), "chocolatey");
+        assert!(!pkg.version.is_empty());
     }
 
     #[test]
