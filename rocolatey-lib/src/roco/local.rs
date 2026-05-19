@@ -488,28 +488,44 @@ mod tests {
         );
         choco_lib_path.push("lib");
 
-        let pkg_path = std::fs::read_dir(&choco_lib_path)
+        let mut pkg_path = None;
+        for entry in std::fs::read_dir(&choco_lib_path)
             .expect("failed to enumerate package directories under Chocolatey lib dir")
-            .filter_map(Result::ok)
-            .map(|entry| entry.path())
-            .filter(|path| path.is_dir())
-            .filter_map(|path| std::fs::read_dir(path).ok())
-            .flatten()
-            .filter_map(Result::ok)
-            .map(|entry| entry.path())
-            .find(|path| {
-                path.is_file()
-                    && path
-                        .file_name()
+        {
+            let dir_path = entry
+                .expect("failed to read package directory entry")
+                .path();
+            if !dir_path.is_dir() {
+                continue;
+            }
+
+            for file_entry in std::fs::read_dir(&dir_path)
+                .expect("failed to enumerate files in package directory")
+            {
+                let file_path = file_entry.expect("failed to read package file entry").path();
+                let is_chocolatey_nuspec = file_path
+                    .file_name()
                     .and_then(|name| name.to_str())
                     .map(|name| name.eq_ignore_ascii_case("chocolatey.nuspec"))
-                    .unwrap_or(false)
-            })
-            .expect("Chocolatey nuspec file not found under lib");
+                    .unwrap_or(false);
+                if file_path.is_file() && is_chocolatey_nuspec {
+                    pkg_path = Some(file_path);
+                    break;
+                }
+            }
+            if pkg_path.is_some() {
+                break;
+            }
+        }
+        let pkg_path = pkg_path.expect("Chocolatey nuspec file not found under lib");
 
         let pkg = get_package_from_nuspec(&pkg_path);
         assert_eq!(pkg.id.to_lowercase(), "chocolatey");
-        assert!(!pkg.version.is_empty());
+        assert!(
+            regex::Regex::new(r"^\d+\.\d+(\.\d+)?([-.+].+)?$")
+                .unwrap()
+                .is_match(&pkg.version)
+        );
     }
 
     #[test]
