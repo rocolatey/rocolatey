@@ -322,6 +322,7 @@ fn ssl_full_stack_valid_pinned_server_certificate_succeeds() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -382,6 +383,7 @@ fn ssl_full_stack_missing_pinned_server_certificate_fails_with_guidance() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -445,6 +447,7 @@ fn ssl_full_stack_unpinned_server_certificate_is_rejected() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -518,6 +521,7 @@ fn ssl_full_stack_protected_route_never_targets_http_plaintext() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -593,6 +597,7 @@ fn ssl_local_bootstrap_first_run_completes_and_allows_server_access() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -675,6 +680,7 @@ fn ssl_empty_enrollment_emergency_override_is_fingerprint_scoped_and_one_shot() 
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -706,6 +712,7 @@ fn ssl_empty_enrollment_emergency_override_is_fingerprint_scoped_and_one_shot() 
     let client_fingerprint = read_client_certificate_fingerprint(&client_cfg.cert_path);
     let override_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
         (
             rocolatey_lib::server::authorization::EMERGENCY_TRUST_OVERRIDE_ENV,
@@ -764,6 +771,7 @@ fn ssl_local_bootstrap_is_idempotent() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -824,6 +832,7 @@ fn ssl_local_bootstrap_preserves_existing_authorized_keys_entries() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -873,6 +882,7 @@ fn ssl_server_startup_fails_closed_on_expired_certificate() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -907,6 +917,7 @@ fn ssl_server_startup_fails_closed_on_clock_skew_certificate() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
@@ -942,6 +953,7 @@ async fn ssl_deny_contract_schema_version_matches_client_upgrade_assumption() {
     let server_trust = server_root.to_string_lossy().to_string();
     let shared_env = [
         ("XDG_CONFIG_HOME", client_xdg.as_str()),
+        ("APPDATA", client_xdg.as_str()),
         ("ROCO_SERVER_TRUST_DIR", server_trust.as_str()),
     ];
 
