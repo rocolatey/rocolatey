@@ -488,15 +488,19 @@ mod tests {
         );
         choco_lib_path.push("lib");
 
-        let mut search_pattern = choco_lib_path.clone();
-        search_pattern.push("**");
-        search_pattern.push("*.nuspec");
-
-        let pkg_path = glob::glob(&search_pattern.to_string_lossy())
-            .expect("failed to enumerate nuspec files under Chocolatey lib dir")
+        let pkg_path = std::fs::read_dir(&choco_lib_path)
+            .expect("failed to enumerate package directories under Chocolatey lib dir")
             .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| path.is_dir())
+            .filter_map(|path| std::fs::read_dir(path).ok())
+            .flatten()
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
             .find(|path| {
-                path.file_name()
+                path.is_file()
+                    && path
+                        .file_name()
                     .and_then(|name| name.to_str())
                     .map(|name| name.eq_ignore_ascii_case("chocolatey.nuspec"))
                     .unwrap_or(false)
