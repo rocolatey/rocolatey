@@ -884,7 +884,7 @@ pub fn is_verbose_mode() -> bool {
 
 pub fn println_verbose(text: &str) {
     if is_verbose_mode() {
-        println!("VERBOSE: {}", text);
+        anstream::println!("VERBOSE: {}", text);
     }
 }
 

@@ -26,7 +26,7 @@ pub async fn search(matches: &clap::ArgMatches) {
     let pkgs = match pkgs {
         Ok(map) => map,
         Err(e) => {
-            eprintln!("Error fetching packages: {}", e);
+            anstream::eprintln!("Error fetching packages: {}", e);
             return;
         }
     };
@@ -34,15 +34,15 @@ pub async fn search(matches: &clap::ArgMatches) {
     if json {
         match serde_json::to_string(&pkgs) {
             Ok(s) => {
-                println!("{}", s);
+                anstream::println!("{}", s);
             }
-            Err(e) => eprintln!("Error converting to JSON: {}", e),
+            Err(e) => anstream::eprintln!("Error converting to JSON: {}", e),
         }
         return;
     }
 
     if pkgs.is_empty() {
-        println!("No packages found matching '{}'.", pkg);
+        anstream::println!("No packages found matching '{}'.", pkg);
         return;
     }
 
@@ -55,7 +55,7 @@ pub async fn search(matches: &clap::ArgMatches) {
     let mut sorted: Vec<_> = pkgs.values().collect();
     sorted.sort_by(|a, b| a.id.to_lowercase().cmp(&b.id.to_lowercase()));
 
-    print!("{}", render_search_output(&sorted, r, mode));
+    anstream::print!("{}", render_search_output(&sorted, r, mode));
 }
 
 async fn search_remote(r: bool, json: bool, pkg: &str) {
@@ -77,18 +77,18 @@ async fn search_remote(r: bool, json: bool, pkg: &str) {
                 return;
             }
             if json {
-                println!("{}", s);
+                anstream::println!("{}", s);
                 return;
             }
             match serde_json::from_str::<RocoServerPackagesResponse>(&s) {
                 Ok(response) => {
                     if let Err(err) = validate_schema_version(response.schema_version, "/search/json") {
-                        eprintln!("{}", err);
+                        anstream::eprintln!("{}", err);
                         return;
                     }
                     let pkgs = response.data;
                     if pkgs.is_empty() {
-                        println!("No packages found matching '{}'.", pkg);
+                        anstream::println!("No packages found matching '{}'.", pkg);
                         return;
                     }
                     let mode = if r {
@@ -97,12 +97,12 @@ async fn search_remote(r: bool, json: bool, pkg: &str) {
                         output_style::current()
                     };
                     let sorted: Vec<_> = pkgs.iter().collect();
-                    print!("{}", render_search_output(&sorted, r, mode));
+                    anstream::print!("{}", render_search_output(&sorted, r, mode));
                 }
-                Err(e) => eprintln!("Error parsing search response from server: {}", e),
+                Err(e) => anstream::eprintln!("Error parsing search response from server: {}", e),
             }
         }
-        None => eprintln!("Error fetching search results from server"),
+        None => anstream::eprintln!("Error fetching search results from server"),
     }
 }
 

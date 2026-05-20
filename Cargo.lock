@@ -4351,6 +4351,7 @@ dependencies = [
 name = "roco"
 version = "0.9.5"
 dependencies = [
+ "anstream",
  "assert_cmd",
  "clap",
  "clap_complete",
@@ -4378,6 +4379,7 @@ dependencies = [
 name = "rocolatey-lib"
 version = "0.9.5"
 dependencies = [
+ "anstream",
  "base64 0.22.1",
  "chrono",
  "futures",

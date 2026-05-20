@@ -49,20 +49,20 @@ fn normalize_license(license: &str) -> String {
 pub fn license(matches: &clap::ArgMatches) {
     let json = matches.get_flag("json-output");
     if json {
-        println!("{}", JSON_LICENSE_DATA);
+        anstream::println!("{}", JSON_LICENSE_DATA);
         return;
     }
 
     let mode = output_style::current();
     let separator = output_style::info("------------------------------------------------", mode);
 
-    println!("Rocolatey is licensed under the {}", ROCO_LICENSE_JSON);
-    println!("{}", separator);
-    println!(
+    anstream::println!("Rocolatey is licensed under the {}", ROCO_LICENSE_JSON);
+    anstream::println!("{}", separator);
+    anstream::println!(
         "{}",
         output_style::header(" Rocolatey is built using the following crates: ", mode)
     );
-    println!("{}", separator);
+    anstream::println!("{}", separator);
 
     let root: Root = parse_json(JSON_LICENSE_DATA).expect("Failed to parse JSON");
 
@@ -72,20 +72,20 @@ pub fn license(matches: &clap::ArgMatches) {
     if full {
         // Print all packages with their full license text
         for library in root.third_party_libraries {
-            println!(
+            anstream::println!(
                 "{} {}",
                 output_style::header("Package:", mode),
                 library.package_name
             );
             for license_info in library.licenses {
-                println!(
+                anstream::println!(
                     "{} {}",
                     output_style::header("License:", mode),
                     license_info.license
                 );
-                println!("{}", license_info.text);
+                anstream::println!("{}", license_info.text);
             }
-            println!("{}", separator);
+            anstream::println!("{}", separator);
         }
     } else {
         // Create a HashMap to group packages by license
@@ -102,13 +102,13 @@ pub fn license(matches: &clap::ArgMatches) {
 
         // Print the licenses and their respective packages
         for (license, packages) in license_map {
-            println!("{} {}", output_style::header("License:", mode), license);
-            println!(
+            anstream::println!("{} {}", output_style::header("License:", mode), license);
+            anstream::println!(
                 "{} {}",
                 output_style::header("Packages:", mode),
                 packages.join(", ")
             );
-            println!("{}", separator);
+            anstream::println!("{}", separator);
         }
     }
 }

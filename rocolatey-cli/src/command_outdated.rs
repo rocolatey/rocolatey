@@ -57,13 +57,13 @@ async fn outdated_remote(
                 return;
             }
             if json {
-                println!("{}", s);
+                anstream::println!("{}", s);
                 return;
             }
             match serde_json::from_str::<RocoServerOutdatedResponse>(&s) {
                 Ok(response) => {
                     if let Err(err) = validate_schema_version(response.schema_version, "/outdated/json") {
-                        eprintln!("{}", err);
+                        anstream::eprintln!("{}", err);
                         return;
                     }
                     let outdated_pkgs = response.data;
@@ -76,12 +76,12 @@ async fn outdated_remote(
                     } else {
                         output_style::current()
                     };
-                    print!("{}", render_outdated_output(warning_count, &outdated_pkgs, r, l, mode));
+                    anstream::print!("{}", render_outdated_output(warning_count, &outdated_pkgs, r, l, mode));
                 }
-                Err(e) => eprintln!("Error parsing outdated response from server: {}", e),
+                Err(e) => anstream::eprintln!("Error parsing outdated response from server: {}", e),
             }
         }
-        None => eprintln!("Error fetching outdated packages from server"),
+        None => anstream::eprintln!("Error fetching outdated packages from server"),
     }
 }
 
@@ -100,9 +100,9 @@ async fn outdated_local(
 
         match serde_json::to_string(&outdated_pkgs) {
             Ok(s) => {
-                println!("{}", s);
+                anstream::println!("{}", s);
             }
-            Err(e) => eprintln!("Error converting to JSON: {}", e),
+            Err(e) => anstream::eprintln!("Error converting to JSON: {}", e),
         }
         return;
     }
@@ -116,7 +116,7 @@ async fn outdated_local(
     } else {
         output_style::current()
     };
-    print!("{}", render_outdated_output(warning_count, &outdated_pkgs, r, l, mode));
+    anstream::print!("{}", render_outdated_output(warning_count, &outdated_pkgs, r, l, mode));
 }
 
 fn render_outdated_output(

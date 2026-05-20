@@ -34,3 +34,4 @@ chrono = { version = "0.4", features = ["serde"] }
 base64 = "0.22"
 time = "0.3"
 x509-parser = "0.16"
+anstream = "0.6"

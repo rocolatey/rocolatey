@@ -31,13 +31,13 @@ async fn bad_remote(limitoutput: bool, json: bool) {
                 return;
             }
             if json {
-                println!("{}", s);
+                anstream::println!("{}", s);
                 return;
             }
             match serde_json::from_str::<RocoServerPackagesResponse>(&s) {
                 Ok(response) => {
                     if let Err(err) = validate_schema_version(response.schema_version, "/bad/json") {
-                        eprintln!("{}", err);
+                        anstream::eprintln!("{}", err);
                         return;
                     }
                     let packages = response.data;
@@ -46,12 +46,12 @@ async fn bad_remote(limitoutput: bool, json: bool) {
                     } else {
                         output_style::current()
                     };
-                    print!("{}", render_bad_output(&packages, limitoutput, mode));
+                    anstream::print!("{}", render_bad_output(&packages, limitoutput, mode));
                 }
-                Err(e) => eprintln!("Error parsing bad-packages response from server: {}", e),
+                Err(e) => anstream::eprintln!("Error parsing bad-packages response from server: {}", e),
             }
         }
-        None => eprintln!("Error fetching bad packages from server"),
+        None => anstream::eprintln!("Error fetching bad packages from server"),
     }
 }
 
@@ -61,9 +61,9 @@ fn bad_local(r: bool, json: bool) {
     if json {
         match serde_json::to_string(&packages) {
             Ok(s) => {
-                println!("{}", s);
+                anstream::println!("{}", s);
             }
-            Err(e) => eprintln!("Error converting to JSON: {}", e),
+            Err(e) => anstream::eprintln!("Error converting to JSON: {}", e),
         }
         return;
     }
@@ -74,7 +74,7 @@ fn bad_local(r: bool, json: bool) {
         output_style::current()
     };
 
-    print!("{}", render_bad_output(&packages, r, mode));
+    anstream::print!("{}", render_bad_output(&packages, r, mode));
 }
 
 fn render_version_token(version: &str, mode: output_style::ColorMode) -> String {

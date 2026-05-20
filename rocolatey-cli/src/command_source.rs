@@ -30,13 +30,13 @@ async fn source_remote(limitoutput: bool, json: bool) {
                 return;
             }
             if json {
-                println!("{}", s);
+                anstream::println!("{}", s);
                 return;
             }
             match serde_json::from_str::<RocoServerFeedsResponse>(&s) {
                 Ok(response) => {
                     if let Err(err) = validate_schema_version(response.schema_version, "/source/json") {
-                        eprintln!("{}", err);
+                        anstream::eprintln!("{}", err);
                         return;
                     }
                     let sources = response.data;
@@ -45,12 +45,12 @@ async fn source_remote(limitoutput: bool, json: bool) {
                     } else {
                         output_style::current()
                     };
-                    print!("{}", render_sources_output(&sources, limitoutput, mode));
+                    anstream::print!("{}", render_sources_output(&sources, limitoutput, mode));
                 }
-                Err(e) => eprintln!("Error parsing sources response from server: {}", e),
+                Err(e) => anstream::eprintln!("Error parsing sources response from server: {}", e),
             }
         }
-        None => eprintln!("Error fetching sources from server"),
+        None => anstream::eprintln!("Error fetching sources from server"),
     }
 }
 
@@ -60,9 +60,9 @@ fn source_local(limitoutput: bool, json: bool) {
     if json {
         match serde_json::to_string(&sources) {
             Ok(s) => {
-                println!("{}", s);
+                anstream::println!("{}", s);
             }
-            Err(e) => eprintln!("Error converting to JSON: {}", e),
+            Err(e) => anstream::eprintln!("Error converting to JSON: {}", e),
         }
         return;
     }
@@ -73,7 +73,7 @@ fn source_local(limitoutput: bool, json: bool) {
         output_style::current()
     };
 
-    print!("{}", render_sources_output(&sources, limitoutput, mode));
+    anstream::print!("{}", render_sources_output(&sources, limitoutput, mode));
 }
 
 fn c_bool(v: bool) -> &'static str {

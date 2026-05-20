@@ -45,13 +45,13 @@ async fn list_remote(limitoutput: bool, json: bool, filter: &str) {
                 return;
             }
             if json {
-                println!("{}", s);
+                anstream::println!("{}", s);
                 return;
             }
             match serde_json::from_str::<RocoServerPackagesResponse>(&s) {
                 Ok(response) => {
                     if let Err(err) = validate_schema_version(response.schema_version, "/local/json") {
-                        eprintln!("{}", err);
+                        anstream::eprintln!("{}", err);
                         return;
                     }
                     let packages = response.data;
@@ -61,12 +61,12 @@ async fn list_remote(limitoutput: bool, json: bool, filter: &str) {
                     } else {
                         output_style::current()
                     };
-                    print!("{}", render_list_output(&packages, total_pkgs, limitoutput, mode));
+                    anstream::print!("{}", render_list_output(&packages, total_pkgs, limitoutput, mode));
                 }
-                Err(e) => eprintln!("Error parsing list response from server: {}", e),
+                Err(e) => anstream::eprintln!("Error parsing list response from server: {}", e),
             }
         }
-        None => eprintln!("Error fetching packages from server"),
+        None => anstream::eprintln!("Error fetching packages from server"),
     }
 }
 
@@ -87,18 +87,18 @@ async fn list_remote_deptree(limitoutput: bool, json: bool, filter: &str) {
                 return;
             }
             if json {
-                println!("{}", s);
+                anstream::println!("{}", s);
                 return;
             }
             let response = match serde_json::from_str::<RocoServerDependencyTreeResponse>(&s) {
                 Ok(response) => response,
                 Err(e) => {
-                    eprintln!("Error parsing dependency tree response from server: {}", e);
+                    anstream::eprintln!("Error parsing dependency tree response from server: {}", e);
                     return;
                 }
             };
             if let Err(err) = validate_schema_version(response.schema_version, "/local/deptree/json") {
-                eprintln!("{}", err);
+                anstream::eprintln!("{}", err);
                 return;
             }
             let tree_text = dependency_tree_nodes_to_text(&response.data);
@@ -107,9 +107,9 @@ async fn list_remote_deptree(limitoutput: bool, json: bool, filter: &str) {
             } else {
                 output_style::current()
             };
-            print!("{}", render_dependency_tree_output(&tree_text, mode));
+            anstream::print!("{}", render_dependency_tree_output(&tree_text, mode));
         }
-        None => eprintln!("Error fetching dependency tree from server"),
+        None => anstream::eprintln!("Error fetching dependency tree from server"),
     }
 }
 
@@ -122,7 +122,7 @@ fn list_local(matches: &clap::ArgMatches, r: bool, json: bool, filter: &String) 
         };
 
         let tree_text = get_dependency_tree_text(filter);
-        print!("{}", render_dependency_tree_output(&tree_text, mode));
+        anstream::print!("{}", render_dependency_tree_output(&tree_text, mode));
         return;
     }
 
@@ -130,8 +130,8 @@ fn list_local(matches: &clap::ArgMatches, r: bool, json: bool, filter: &String) 
 
     if json {
         match serde_json::to_string(&packages) {
-            Ok(s) => println!("{}", s),
-            Err(e) => eprintln!("Error converting to JSON: {}", e),
+            Ok(s) => anstream::println!("{}", s),
+            Err(e) => anstream::eprintln!("Error converting to JSON: {}", e),
         }
         return;
     }
@@ -142,7 +142,7 @@ fn list_local(matches: &clap::ArgMatches, r: bool, json: bool, filter: &String) 
         output_style::current()
     };
 
-    print!("{}", render_list_output(&packages, total_pkgs, r, mode));
+    anstream::print!("{}", render_list_output(&packages, total_pkgs, r, mode));
 }
 
 fn render_version_token(version: &str, mode: output_style::ColorMode) -> String {

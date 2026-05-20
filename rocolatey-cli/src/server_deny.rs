@@ -6,17 +6,17 @@ pub fn print_deny_if_present(endpoint: &str, body: &str) -> bool {
         Err(_) => return false,
     };
 
-    eprintln!(
+    anstream::eprintln!(
         "Server deny on {}: code={:?} request_id={} message={}",
         endpoint, deny.code, deny.request_id, deny.message
     );
 
     if let Some(hint) = deny.enrollment_hint {
-        eprintln!("Hint: {}", hint);
+        anstream::eprintln!("Hint: {}", hint);
     }
 
     if let Some(fp) = deny.short_fingerprint {
-        eprintln!("Fingerprint: {}", fp);
+        anstream::eprintln!("Fingerprint: {}", fp);
     }
 
     true

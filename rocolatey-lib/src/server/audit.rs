@@ -87,7 +87,7 @@ impl AuditEvent {
 /// Server-side logs use `server_audit_log_path()`; never write to client-facing outputs.
 pub fn emit_audit_event(log_path: &Path, event: &AuditEvent) {
     if let Err(e) = try_emit_audit_event(log_path, event) {
-        eprintln!(
+        anstream::eprintln!(
             "[AUDIT-ERROR] failed to write audit event to {}: {}",
             log_path.display(),
             e

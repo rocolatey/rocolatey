@@ -57,9 +57,9 @@ async fn main() {
         Some(("upgrade", matches)) => command_upgrade::upgrade(matches).await,
         _ => {
             if let Err(e) = cli::build_cli().print_help() {
-                eprintln!("Error printing help: {}", e);
+                anstream::eprintln!("Error printing help: {}", e);
             }
-            println!(); // Add a newline after the help text
+            anstream::println!(); // Add a newline after the help text
         }
     }
     // todo newline after everything?

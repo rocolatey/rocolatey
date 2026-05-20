@@ -240,7 +240,7 @@ pub async fn get_latest_remote_packages(
                         .await
                         .unwrap_or_else(|e| {
                             if !limit_output {
-                                eprintln!("failed to fetch packages: {}", e)
+                                anstream::eprintln!("failed to fetch packages: {}", e)
                             }
                             vec![]
                         });
@@ -300,7 +300,7 @@ pub async fn find_latest_remote_packages(
                         .await
                         .unwrap_or_else(|e| {
                             if !limit_output {
-                                eprintln!("failed to fetch packages: {}", e)
+                                anstream::eprintln!("failed to fetch packages: {}", e)
                             }
                             vec![]
                         });

@@ -15,7 +15,7 @@ pub async fn upgrade(matches: &clap::ArgMatches) {
         .collect();
 
     if pkg == "all" && package_names.is_empty() {
-        println!("No outdated packages found.");
+        anstream::println!("No outdated packages found.");
         return;
     }
 

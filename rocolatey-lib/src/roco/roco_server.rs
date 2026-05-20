@@ -83,17 +83,17 @@ fn print_deny_if_present(endpoint: &str, body: &str) -> bool {
         Err(_) => return false,
     };
 
-    eprintln!(
+    anstream::eprintln!(
         "Server deny on {}: code={:?} request_id={} message={}",
         endpoint, deny.code, deny.request_id, deny.message
     );
 
     if let Some(hint) = deny.enrollment_hint {
-        eprintln!("Hint: {}", hint);
+        anstream::eprintln!("Hint: {}", hint);
     }
 
     if let Some(fp) = deny.short_fingerprint {
-        eprintln!("Fingerprint: {}", fp);
+        anstream::eprintln!("Fingerprint: {}", fp);
     }
 
     true
@@ -109,7 +109,7 @@ pub async fn run_on_server_simple_get(request_path: &str, request_body: &str) ->
     let client = match build_client() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to build HTTP client: {}", e);
+            anstream::eprintln!("Failed to build HTTP client: {}", e);
             return None;
         }
     };
@@ -128,12 +128,12 @@ pub async fn run_on_server_simple_get(request_path: &str, request_body: &str) ->
         Ok(resp) => match resp.text().await {
             Ok(txt) => Some(txt),
             Err(e) => {
-                eprintln!("Request to {} failed: {}", url, e);
+                anstream::eprintln!("Request to {} failed: {}", url, e);
                 None
             }
         },
         Err(e) => {
-            eprintln!("Request to {} failed: {}", url, e);
+            anstream::eprintln!("Request to {} failed: {}", url, e);
             None
         }
     }
@@ -151,7 +151,7 @@ pub async fn run_on_server_simple_get_with_config(
     let client = match build_client_with_config(tls_config) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to build HTTP client: {}", e);
+            anstream::eprintln!("Failed to build HTTP client: {}", e);
             return None;
         }
     };
@@ -170,12 +170,12 @@ pub async fn run_on_server_simple_get_with_config(
         Ok(resp) => match resp.text().await {
             Ok(txt) => Some(txt),
             Err(e) => {
-                eprintln!("Request to {} failed: {}", url, e);
+                anstream::eprintln!("Request to {} failed: {}", url, e);
                 None
             }
         },
         Err(e) => {
-            eprintln!("Request to {} failed: {}", url, e);
+            anstream::eprintln!("Request to {} failed: {}", url, e);
             None
         }
     }
@@ -191,7 +191,7 @@ pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -
     let client = match build_client() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to build HTTP client: {}", e);
+            anstream::eprintln!("Failed to build HTTP client: {}", e);
             return None;
         }
     };
@@ -210,12 +210,12 @@ pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -
         Ok(resp) => match resp.text().await {
             Ok(txt) => Some(txt),
             Err(e) => {
-                eprintln!("Request to {} failed: {}", url, e);
+                anstream::eprintln!("Request to {} failed: {}", url, e);
                 None
             }
         },
         Err(e) => {
-            eprintln!("Request to {} failed: {}", url, e);
+            anstream::eprintln!("Request to {} failed: {}", url, e);
             None
         }
     }
@@ -233,7 +233,7 @@ pub async fn run_on_server_simple_post_with_config(
     let client = match build_client_with_config(tls_config) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to build HTTP client: {}", e);
+            anstream::eprintln!("Failed to build HTTP client: {}", e);
             return None;
         }
     };
@@ -252,12 +252,12 @@ pub async fn run_on_server_simple_post_with_config(
         Ok(resp) => match resp.text().await {
             Ok(txt) => Some(txt),
             Err(e) => {
-                eprintln!("Request to {} failed: {}", url, e);
+                anstream::eprintln!("Request to {} failed: {}", url, e);
                 None
             }
         },
         Err(e) => {
-            eprintln!("Request to {} failed: {}", url, e);
+            anstream::eprintln!("Request to {} failed: {}", url, e);
             None
         }
     }
@@ -273,7 +273,7 @@ pub async fn run_on_server_simple_post_with_config(
 ///   `GET /rocolatey/choco/status/<id>` to fetch
 ///   the job state and logs.
 /// - New log lines received from the server are printed immediately
-///   with `println!`, so they are streamed to the caller's stdout as
+///   with `anstream::println!`, so they are streamed to the caller's stdout as
 ///   they arrive (they are not captured or returned by this function).
 /// - Returns `true` when the server reports `JobStatus::Completed` and
 ///   `false` for `JobStatus::Failed` or persistent errors.
@@ -286,7 +286,7 @@ pub async fn run_on_server_simple_post_with_config(
 ///   Once `err_count` reaches 5 the function returns `false`.
 ///
 /// Notes:
-/// - Logs are printed incrementally using `println!`, so they appear
+/// - Logs are printed incrementally using `anstream::println!`, so they appear
 ///   in real time on stdout; stderr from the remote job is expected to
 ///   be included in the server-provided `logs` list if applicable.
 pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> i32 {
@@ -307,7 +307,7 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
     let client = match build_client() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to build HTTP client: {}", e);
+            anstream::eprintln!("Failed to build HTTP client: {}", e);
             return -1;
         }
     };
@@ -330,7 +330,7 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
             let txt = match r.text().await {
                 Ok(t) => t,
                 Err(e) => {
-                    eprintln!("request failed: {}", e);
+                    anstream::eprintln!("request failed: {}", e);
                     return -1;
                 }
             };
@@ -340,20 +340,20 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
             }
 
             if !status.is_success() {
-                eprintln!("request failed with status {}: {}", status, txt);
+                anstream::eprintln!("request failed with status {}: {}", status, txt);
                 return -1;
             }
 
             match serde_json::from_str::<crate::server::RocoServerChocoJobIdResponse>(&txt) {
                 Ok(j) => j.id,
                 Err(e) => {
-                    eprintln!("request failed: {}", e);
+                    anstream::eprintln!("request failed: {}", e);
                     return -1;
                 }
             }
         }
         Err(e) => {
-            eprintln!("request failed: {}", e);
+            anstream::eprintln!("request failed: {}", e);
             return -1;
         }
     };
@@ -377,7 +377,7 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                 let txt = match r.text().await {
                     Ok(t) => t,
                     Err(e) => {
-                        eprintln!("status query failed: {}", e);
+                        anstream::eprintln!("status query failed: {}", e);
                         err_count += 1;
                         if err_count >= 5 {
                             return -1;
@@ -391,7 +391,7 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                 }
 
                 if !status.is_success() {
-                    eprintln!("status query failed with status {}: {}", status, txt);
+                    anstream::eprintln!("status query failed with status {}: {}", status, txt);
                     err_count += 1;
                     if err_count >= 5 {
                         return -1;
@@ -403,7 +403,7 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                     Ok(js) => {
                         // print new logs
                         for line in js.logs.iter().skip(last_log_idx) {
-                            println!("{}", line);
+                            anstream::println!("{}", line);
                         }
                         last_log_idx = js.logs.len();
                         match js.status {
@@ -413,7 +413,7 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                         }
                     }
                     Err(e) => {
-                        eprintln!("ERROR: failed to parse json: {} - {}\n", txt, e);
+                        anstream::eprintln!("ERROR: failed to parse json: {} - {}\n", txt, e);
                         err_count += 1;
                         if err_count >= 5 {
                             return -1;
@@ -422,7 +422,7 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                 }
             }
             Err(e) => {
-                eprintln!("ERROR: status query failed: {}", e);
+                anstream::eprintln!("ERROR: status query failed: {}", e);
                 err_count += 1;
                 if err_count >= 5 {
                     return -1;

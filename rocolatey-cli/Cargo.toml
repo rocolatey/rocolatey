@@ -17,6 +17,7 @@ serde_json = "1.0"
 # owo-colors chosen over `colored`: zero dependencies, type-system Display
 # wrappers (no per-call heap alloc), and TTY detection via std::io::IsTerminal.
 owo-colors = "4"
+anstream = "0.6"
 
 [build-dependencies]
 clap = "4.4.14"

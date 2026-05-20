@@ -186,7 +186,7 @@ fn get_chocolatey_dir() -> Result<String, std::env::VarError> {
     match std::env::var(key) {
         Ok(val) => Ok(String::from(val)),
         Err(e) => {
-            eprintln!("failed to get choco dir 'ChocolateyInstall': {}", e);
+            anstream::eprintln!("failed to get choco dir 'ChocolateyInstall': {}", e);
             ::std::process::exit(1)
         }
     }
@@ -239,10 +239,10 @@ pub fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
                     buf.clear();
                 }
             }
-            Err(e) => println!("{:?}", e),
+            Err(e) => anstream::println!("{:?}", e),
         }
     }
-    // println!("{:#?}", config_settings);
+    // anstream::println!("{:#?}", config_settings);
     let proxy_config = match config_settings.get("proxy") {
         Some(proxy_url) => match proxy_url.is_empty() {
             true => None,

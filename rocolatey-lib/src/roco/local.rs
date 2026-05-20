@@ -25,7 +25,7 @@ pub fn get_local_packages(
     for entry in glob::glob(&pkg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => pkgs.push(get_package_from_nuspec(&path)),
-            Err(e) => println!("{:?}", e),
+            Err(e) => anstream::println!("{:?}", e),
         }
     }
     let total_packages = pkgs.len();
@@ -47,7 +47,7 @@ pub fn get_local_bad_packages() -> Result<Vec<Package>, Box<dyn std::error::Erro
     for entry in glob::glob(&pkg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => pkgs.push(get_package_from_nuspec(&path)),
-            Err(e) => println!("{:?}", e),
+            Err(e) => anstream::println!("{:?}", e),
         }
     }
     Ok(pkgs)
@@ -425,7 +425,7 @@ fn get_package_from_nupkg_filename(filename: &str) -> Option<Package> {
             dependencies: None,
         }),
         None => {
-            println!("ERROR: failed to get package from filename '{}'", filename);
+            anstream::println!("ERROR: failed to get package from filename '{}'", filename);
             None
         }
     }
