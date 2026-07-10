@@ -162,6 +162,28 @@ a Chocolatey package manager interface.")
         .arg(&common_arg_verbose)
     )
     .subcommand(
+        Command::new("pin")
+        .about("manage package pins")
+        .subcommand(
+            Command::new("list")
+                .about("list pinned packages")
+                .arg(&common_arg_limitoutput)
+                .arg(&common_arg_json_output)
+        )
+        .subcommand(
+            Command::new("add")
+                .about("pin a package to prevent upgrades")
+                .arg(Arg::new("pkg").required(true))
+                .arg(Arg::new("version").long("version").help("specific version to pin"))
+        )
+        .subcommand(
+            Command::new("remove")
+                .about("remove a package pin")
+                .arg(Arg::new("pkg").required(true))
+                .arg(Arg::new("version").long("version").help("specific version to unpin"))
+        )
+    )
+    .subcommand(
         Command::new("server").about("manage roco server configuration and TLS setup")
         .arg(
             Arg::new("setup-tls-help")

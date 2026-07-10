@@ -35,6 +35,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
             [CompletionResult]::new('install', 'install', [CompletionResultType]::ParameterValue, 'install choco packages (using choco.exe)')
             [CompletionResult]::new('uninstall', 'uninstall', [CompletionResultType]::ParameterValue, 'uninstall choco packages (using choco.exe)')
+            [CompletionResult]::new('pin', 'pin', [CompletionResultType]::ParameterValue, 'manage package pins')
             [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'manage roco server configuration and TLS setup')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
@@ -147,6 +148,58 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
+        'roco;pin' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list pinned packages')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'pin a package to prevent upgrades')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'remove a package pin')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'roco;pin;list' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;pin;add' {
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'specific version to pin')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;pin;remove' {
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'specific version to unpin')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;pin;help' {
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list pinned packages')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'pin a package to prevent upgrades')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'remove a package pin')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'roco;pin;help;list' {
+            break
+        }
+        'roco;pin;help;add' {
+            break
+        }
+        'roco;pin;help;remove' {
+            break
+        }
+        'roco;pin;help;help' {
+            break
+        }
         'roco;server' {
             [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
             [CompletionResult]::new('--setup-tls-help', '--setup-tls-help', [CompletionResultType]::ParameterName, 'display TLS setup status and enrollment guidance')
@@ -169,6 +222,7 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
             [CompletionResult]::new('install', 'install', [CompletionResultType]::ParameterValue, 'install choco packages (using choco.exe)')
             [CompletionResult]::new('uninstall', 'uninstall', [CompletionResultType]::ParameterValue, 'uninstall choco packages (using choco.exe)')
+            [CompletionResult]::new('pin', 'pin', [CompletionResultType]::ParameterValue, 'manage package pins')
             [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'manage roco server configuration and TLS setup')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
@@ -198,6 +252,21 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;help;uninstall' {
+            break
+        }
+        'roco;help;pin' {
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list pinned packages')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'pin a package to prevent upgrades')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'remove a package pin')
+            break
+        }
+        'roco;help;pin;list' {
+            break
+        }
+        'roco;help;pin;add' {
+            break
+        }
+        'roco;help;pin;remove' {
             break
         }
         'roco;help;server' {

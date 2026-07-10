@@ -152,6 +152,85 @@ _arguments "${_arguments_options[@]}" : \
 ':pkg:_default' \
 && ret=0
 ;;
+(pin)
+_arguments "${_arguments_options[@]}" : \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_roco__pin_commands" \
+"*::: :->pin" \
+&& ret=0
+
+    case $state in
+    (pin)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:roco-pin-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-r[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--limitoutput[limit output to essential information (automation-safe, no ANSI colors)]' \
+'--json[output results in JSON format]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+'--version=[specific version to pin]: :_default' \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-h[Print help]' \
+'--help[Print help]' \
+':pkg:_default' \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+'--version=[specific version to unpin]: :_default' \
+'--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
+'-h[Print help]' \
+'--help[Print help]' \
+':pkg:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_roco__pin__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:roco-pin-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
 (server)
 _arguments "${_arguments_options[@]}" : \
 '--color=[Control color output\: auto (default), always, or never. -r always stays uncolored]:WHEN:(auto always never)' \
@@ -213,6 +292,34 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(pin)
+_arguments "${_arguments_options[@]}" : \
+":: :_roco__help__pin_commands" \
+"*::: :->pin" \
+&& ret=0
+
+    case $state in
+    (pin)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:roco-help-pin-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
 (server)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -242,6 +349,7 @@ _roco_commands() {
 'upgrade:upgrade outdated choco packages (using choco.exe)' \
 'install:install choco packages (using choco.exe)' \
 'uninstall:uninstall choco packages (using choco.exe)' \
+'pin:manage package pins' \
 'server:manage roco server configuration and TLS setup' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -264,6 +372,7 @@ _roco__help_commands() {
 'upgrade:upgrade outdated choco packages (using choco.exe)' \
 'install:install choco packages (using choco.exe)' \
 'uninstall:uninstall choco packages (using choco.exe)' \
+'pin:manage package pins' \
 'server:manage roco server configuration and TLS setup' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -298,6 +407,30 @@ _roco__help__list_commands() {
 _roco__help__outdated_commands() {
     local commands; commands=()
     _describe -t commands 'roco help outdated commands' commands "$@"
+}
+(( $+functions[_roco__help__pin_commands] )) ||
+_roco__help__pin_commands() {
+    local commands; commands=(
+'list:list pinned packages' \
+'add:pin a package to prevent upgrades' \
+'remove:remove a package pin' \
+    )
+    _describe -t commands 'roco help pin commands' commands "$@"
+}
+(( $+functions[_roco__help__pin__add_commands] )) ||
+_roco__help__pin__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help pin add commands' commands "$@"
+}
+(( $+functions[_roco__help__pin__list_commands] )) ||
+_roco__help__pin__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help pin list commands' commands "$@"
+}
+(( $+functions[_roco__help__pin__remove_commands] )) ||
+_roco__help__pin__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco help pin remove commands' commands "$@"
 }
 (( $+functions[_roco__help__search_commands] )) ||
 _roco__help__search_commands() {
@@ -343,6 +476,61 @@ _roco__list_commands() {
 _roco__outdated_commands() {
     local commands; commands=()
     _describe -t commands 'roco outdated commands' commands "$@"
+}
+(( $+functions[_roco__pin_commands] )) ||
+_roco__pin_commands() {
+    local commands; commands=(
+'list:list pinned packages' \
+'add:pin a package to prevent upgrades' \
+'remove:remove a package pin' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'roco pin commands' commands "$@"
+}
+(( $+functions[_roco__pin__add_commands] )) ||
+_roco__pin__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco pin add commands' commands "$@"
+}
+(( $+functions[_roco__pin__help_commands] )) ||
+_roco__pin__help_commands() {
+    local commands; commands=(
+'list:list pinned packages' \
+'add:pin a package to prevent upgrades' \
+'remove:remove a package pin' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'roco pin help commands' commands "$@"
+}
+(( $+functions[_roco__pin__help__add_commands] )) ||
+_roco__pin__help__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco pin help add commands' commands "$@"
+}
+(( $+functions[_roco__pin__help__help_commands] )) ||
+_roco__pin__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco pin help help commands' commands "$@"
+}
+(( $+functions[_roco__pin__help__list_commands] )) ||
+_roco__pin__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco pin help list commands' commands "$@"
+}
+(( $+functions[_roco__pin__help__remove_commands] )) ||
+_roco__pin__help__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco pin help remove commands' commands "$@"
+}
+(( $+functions[_roco__pin__list_commands] )) ||
+_roco__pin__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco pin list commands' commands "$@"
+}
+(( $+functions[_roco__pin__remove_commands] )) ||
+_roco__pin__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'roco pin remove commands' commands "$@"
 }
 (( $+functions[_roco__search_commands] )) ||
 _roco__search_commands() {

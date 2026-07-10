@@ -7,6 +7,7 @@ mod command_install;
 mod command_license;
 mod command_list;
 mod command_outdated;
+mod command_pin;
 mod command_search;
 mod command_server;
 mod command_source;
@@ -50,6 +51,7 @@ async fn main() {
         Some(("license", matches)) => command_license::license(matches),
         Some(("list", matches)) => command_list::list(matches).await,
         Some(("outdated", matches)) => command_outdated::outdated(matches).await,
+        Some(("pin", matches)) => command_pin::pin(matches).await,
         Some(("source", matches)) => command_source::source(matches).await,
         Some(("search", matches)) => command_search::search(matches).await,
         Some(("server", matches)) => command_server::server(matches).await,

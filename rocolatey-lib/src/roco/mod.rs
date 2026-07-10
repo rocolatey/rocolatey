@@ -11,6 +11,7 @@ pub mod nuget3;
 pub mod remote;
 pub mod semver;
 pub mod client_tls;
+pub mod pin;
 use crate::println_verbose;
 
 #[derive(Debug, Serialize, Deserialize)]
