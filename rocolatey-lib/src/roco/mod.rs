@@ -336,18 +336,24 @@ fn decrypt_choco_config_string(encrypted: &str) -> String {
     }
     */
     println_verbose(&format!("decypher '{}'", encrypted));
-    let pwsh = format!(
-        "Add-Type -AssemblyName System.Security;([System.Text.UTF8Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect(([System.Convert]::FromBase64String('{}')),([System.Text.UTF8Encoding]::UTF8.GetBytes('Chocolatey')),[System.Security.Cryptography.DataProtectionScope]::LocalMachine)))",
-        encrypted
-    );
-    let chdec = std::process::Command::new("powershell.exe")
+    let pwsh_script = "Add-Type -AssemblyName System.Security;$enc=[System.Text.Encoding]::UTF8.GetString([System.IO.Stream]::new([Console]::OpenStandardInput()).ReadAllBytes());([System.Text.UTF8Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect(([System.Convert]::FromBase64String($enc)),([System.Text.UTF8Encoding]::UTF8.GetBytes('Chocolatey')),[System.Security.Cryptography.DataProtectionScope]::LocalMachine)))";
+    let mut chdec = std::process::Command::new("powershell.exe")
         .arg("-NoProfile")
         .arg("-ExecutionPolicy")
         .arg("Bypass")
-        .arg(pwsh)
-        .output()
-        .expect("failed to run decypher text");
-    let decrypted = String::from_utf8_lossy(&chdec.stdout);
+        .arg("-Command")
+        .arg(pwsh_script)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .expect("failed to spawn powershell for decryption");
+    // Write encrypted value via stdin to avoid shell interpolation
+    use std::io::Write;
+    if let Some(mut stdin) = chdec.stdin.take() {
+        stdin.write_all(encrypted.as_bytes()).ok();
+    }
+    let output = chdec.wait_with_output().expect("failed to run decypher text");
+    let decrypted = String::from_utf8_lossy(&output.stdout);
     let res = decrypted.trim(); // remove newlines
     res.to_string()
 }
