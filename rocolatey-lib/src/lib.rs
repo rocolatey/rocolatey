@@ -626,14 +626,15 @@ pub mod bootstrap {
             prune_backups_for_target(target_path, MAX_BACKUPS_PER_TARGET)?;
         }
 
-        // Write to temporary file
+        // Write to temporary file (unique name prevents concurrent-write corruption)
         let temp_path = {
             let mut path = target_path.to_path_buf();
             let file_name = path.file_name().ok_or("Invalid file name")?
                 .to_string_lossy()
                 .to_string();
+            let unique_suffix = uuid::Uuid::new_v4().as_simple().to_string();
             path.pop();
-            path.push(format!(".tmp.{}", file_name));
+            path.push(format!(".tmp.{}.{}", file_name, unique_suffix));
             path
         };
 
