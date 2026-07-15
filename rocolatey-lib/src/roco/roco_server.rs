@@ -133,7 +133,12 @@ pub async fn run_on_server_simple_get(request_path: &str, request_body: &str) ->
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                // Renewal succeeded — caller should retry the original request
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -175,7 +180,11 @@ pub async fn run_on_server_simple_get_with_config(
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -215,7 +224,11 @@ pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -257,7 +270,11 @@ pub async fn run_on_server_simple_post_with_config(
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -353,7 +370,11 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
             }
         }
         Err(e) => {
-            anstream::eprintln!("request failed: {}", e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("request failed: {}", e);
+            }
             return -1;
         }
     };
