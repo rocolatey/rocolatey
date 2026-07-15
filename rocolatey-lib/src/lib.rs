@@ -670,7 +670,7 @@ pub mod bootstrap {
             .map(|e| format!(".{}", e))
             .unwrap_or_default();
 
-        let mut backups: Vec<(std::time::SystemTime, PathBuf)> = Vec::new();
+        let mut backups: Vec<(i64, PathBuf)> = Vec::new();
 
         for entry in fs::read_dir(parent)? {
             let entry = entry?;
@@ -706,11 +706,9 @@ pub mod bootstrap {
                 continue;
             }
 
-            let modified = entry
-                .metadata()
-                .and_then(|m| m.modified())
-                .unwrap_or(std::time::UNIX_EPOCH);
-            backups.push((modified, path));
+            // Use embedded timestamp from filename for reliable sorting across filesystems
+            let embedded_ts = middle.parse::<i64>().unwrap_or(0);
+            backups.push((embedded_ts, path));
         }
 
         backups.sort_by(|a, b| b.0.cmp(&a.0));
