@@ -54,6 +54,8 @@ impl AuthorizedKeysRuntime {
 
     pub fn start_watcher(&self) {
         let watch_path = self.path.clone();
+        let watch_filename = self.path.file_name().map(|n| n.to_os_string());
+        let watch_parent = self.path.parent().unwrap_or(&self.path).to_path_buf();
         let keys = self.keys.clone();
         let healthy = self.watcher_healthy.clone();
 
@@ -81,11 +83,12 @@ impl AuthorizedKeysRuntime {
                 }
             };
 
-            if let Err(err) = watcher.watch(&watch_path, RecursiveMode::NonRecursive) {
+            // Watch the parent directory so the watcher survives file deletion/recreation
+            if let Err(err) = watcher.watch(&watch_parent, RecursiveMode::NonRecursive) {
                 healthy.store(false, Ordering::Relaxed);
                 eprintln!(
                     "[HIGH] authorized_keys watcher attach failed for {}: {}. Keeping last known good key set.",
-                    watch_path.display(),
+                    watch_parent.display(),
                     err
                 );
                 rocolatey_lib::server::audit::emit_audit_event(
@@ -94,7 +97,7 @@ impl AuthorizedKeysRuntime {
                         rocolatey_lib::server::audit::AuditEventKind::WatcherFault,
                         format!(
                             "authorized_keys watcher attach failed for {}: {}. Using last known good key set.",
-                            watch_path.display(),
+                            watch_parent.display(),
                             err
                         ),
                     ),
@@ -110,6 +113,23 @@ impl AuthorizedKeysRuntime {
                             EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
                         ) =>
                     {
+                        // Only reload when the target file (or its temp variant) is affected
+                        let relevant = ev.paths.iter().any(|p| {
+                            p.file_name() == watch_filename.as_deref()
+                                || p.file_name()
+                                    .and_then(|n| n.to_str())
+                                    .map_or(false, |n| n.starts_with(".tmp.") && {
+                                        // Check if the temp file belongs to our target
+                                        watch_filename.as_ref().map_or(false, |target| {
+                                            let target_str = target.to_string_lossy();
+                                            n.contains(&*target_str)
+                                        })
+                                    })
+                        });
+                        if !relevant {
+                            continue;
+                        }
+
                         match rocolatey_lib::server::authorization::load_authorized_keys_with_warnings(
                             &watch_path,
                         ) {
@@ -144,9 +164,13 @@ impl AuthorizedKeysRuntime {
                                 );
                             }
                             Err(err) => {
+                                // File may have been deleted; fall back to empty set
+                                if let Ok(mut guard) = keys.write() {
+                                    *guard = Vec::new();
+                                }
                                 healthy.store(false, Ordering::Relaxed);
                                 eprintln!(
-                                    "[HIGH] authorized_keys reload failed for {}: {}. Keeping last known good key set.",
+                                    "[HIGH] authorized_keys reload failed for {}: {}. Using empty key set until file is restored.",
                                     watch_path.display(),
                                     err
                                 );
@@ -155,7 +179,7 @@ impl AuthorizedKeysRuntime {
                                     &rocolatey_lib::server::audit::AuditEvent::new(
                                         rocolatey_lib::server::audit::AuditEventKind::WatcherFault,
                                         format!(
-                                            "authorized_keys reload failed for {}: {}. Using last known good key set.",
+                                            "authorized_keys reload failed for {}: {}. Using empty key set until file is restored.",
                                             watch_path.display(),
                                             err
                                         ),
