@@ -141,10 +141,27 @@ fn gen_cert(force: bool) {
             print_cert_fingerprint("Server", &ServerTlsConfig::default().cert_path);
 
             if force {
+                // Auto-update local client's pinned server cert after forced rotation
+                let server_cfg = ServerTlsConfig::default();
+                let client_cfg = ClientTlsConfig::default();
+                if let Ok(server_cert) = fs::read(&server_cfg.cert_path) {
+                    if let Err(e) = bootstrap::write_atomic_with_backup(
+                        &client_cfg.known_server_keys_path,
+                        &server_cert,
+                    ) {
+                        anstream::eprintln!(
+                            "[WARN] Could not update local pinned server cert: {}. Manual update required.",
+                            e
+                        );
+                    } else {
+                        anstream::println!("[OK] Local client pinned server cert updated automatically");
+                    }
+                }
+
                 anstream::println!("[WARN] Forced server key rotation executed.");
-                anstream::println!("Remediation required:");
-                anstream::println!("  1. Distribute updated server fingerprint to clients");
-                anstream::println!("  2. Update any pinned server trust entries before reconnect");
+                anstream::println!("Remediation for remote clients:");
+                anstream::println!("  1. Distribute updated server fingerprint to remote clients");
+                anstream::println!("  2. Remote clients must re-pin the server cert in known_server_keys");
                 anstream::println!("  3. Keep backups until all clients can re-authenticate");
                 if let Some(path) = cert_backup {
                     anstream::println!("  Backup certificate: {}", path.display());
