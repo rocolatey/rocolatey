@@ -42,14 +42,45 @@ impl AuthorizedKeysRuntime {
     }
 
     pub fn authorized_key_count(&self) -> usize {
-        self.keys
-            .read()
-            .map(|v| v.len())
-            .unwrap_or(0)
+        match self.keys.read() {
+            Ok(guard) => guard.len(),
+            Err(poisoned) => {
+                // Recover from poisoned lock — the inner data is still usable
+                let guard = poisoned.into_inner();
+                guard.len()
+            }
+        }
     }
 
     pub fn watcher_healthy(&self) -> bool {
         self.watcher_healthy.load(Ordering::Relaxed)
+    }
+
+    fn update_keys_or_recover(
+        keys: &Arc<RwLock<Vec<String>>>,
+        new_keys: Vec<String>,
+        healthy: &Arc<AtomicBool>,
+        is_healthy: bool,
+    ) {
+        match keys.write() {
+            Ok(mut guard) => {
+                *guard = new_keys;
+            }
+            Err(poisoned) => {
+                // Recover from poisoned lock — the inner data is still usable
+                let mut guard = poisoned.into_inner();
+                *guard = new_keys;
+                eprintln!("[HIGH] authorized_keys lock was poisoned; recovered key set");
+                rocolatey_lib::server::audit::emit_audit_event(
+                    &rocolatey_lib::server::audit::server_audit_log_path(),
+                    &rocolatey_lib::server::audit::AuditEvent::new(
+                        rocolatey_lib::server::audit::AuditEventKind::WatcherFault,
+                        "authorized_keys RwLock was poisoned; recovered key set from poison".to_string(),
+                    ),
+                );
+            }
+        }
+        healthy.store(is_healthy, Ordering::Relaxed);
     }
 
     pub fn start_watcher(&self) {
@@ -135,10 +166,7 @@ impl AuthorizedKeysRuntime {
                         ) {
                             Ok(parsed) => {
                                 let count = parsed.fingerprints.len();
-                                if let Ok(mut guard) = keys.write() {
-                                    *guard = parsed.fingerprints;
-                                }
-                                healthy.store(true, Ordering::Relaxed);
+                                Self::update_keys_or_recover(&keys, parsed.fingerprints, &healthy, true);
                                 for warning in &parsed.warnings {
                                     rocolatey_lib::server::audit::emit_audit_event(
                                         &rocolatey_lib::server::audit::server_audit_log_path(),
@@ -165,10 +193,7 @@ impl AuthorizedKeysRuntime {
                             }
                             Err(err) => {
                                 // File may have been deleted; fall back to empty set
-                                if let Ok(mut guard) = keys.write() {
-                                    *guard = Vec::new();
-                                }
-                                healthy.store(false, Ordering::Relaxed);
+                                Self::update_keys_or_recover(&keys, Vec::new(), &healthy, false);
                                 eprintln!(
                                     "[HIGH] authorized_keys reload failed for {}: {}. Using empty key set until file is restored.",
                                     watch_path.display(),
