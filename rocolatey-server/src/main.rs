@@ -254,6 +254,70 @@ async fn run_server(bind_addr: &str, bind_port: u16) {
     auth_runtime.start_watcher();
     serverimpl::install_authorization_runtime(auth_runtime);
 
+    // Check if we're in the overlap window and start renewal server if so
+    match rocolatey_lib::bootstrap::check_overlap_window(&tls_config) {
+        Ok(Some((prev_cert, _prev_key))) => {
+            let state = rocolatey_lib::bootstrap::load_rotation_state(
+                &tls_config.rotation_state_path(),
+            )
+            .unwrap_or(None);
+            if let Some(state) = state {
+                let renew_port = bind_port + 1;
+                let renew_addr: std::net::Ipv4Addr = bind_addr.parse().unwrap();
+                let renew_socket = std::net::SocketAddr::new(
+                    std::net::IpAddr::V4(renew_addr),
+                    renew_port,
+                );
+
+                let new_cert_pem = std::fs::read_to_string(&tls_config.cert_path)
+                    .unwrap_or_default();
+                let prev_fingerprint = rocolatey_lib::server::authorization::fingerprint_from_cert(&prev_cert)
+                    .unwrap_or_default();
+                let new_fingerprint = state.identity_fingerprint.clone();
+                let continuity_proof = state.continuity_proof.clone().unwrap_or_default();
+                let issued_at = state.issued_at_utc.to_rfc3339();
+
+                let renewal_filter = serverimpl::create_renewal_filter(
+                    new_cert_pem,
+                    continuity_proof,
+                    prev_fingerprint,
+                    new_fingerprint,
+                    issued_at,
+                );
+
+                let prev_cert_path = tls_config.prev_cert_path();
+                let prev_key_path = tls_config.prev_key_path();
+
+                tokio::spawn(async move {
+                    println!(
+                        " renewal server binding on port {} (overlap window active)",
+                        renew_port
+                    );
+                    rocolatey_lib::server::audit::emit_audit_event(
+                        &rocolatey_lib::server::audit::server_audit_log_path(),
+                        &rocolatey_lib::server::audit::AuditEvent::new(
+                            rocolatey_lib::server::audit::AuditEventKind::Bootstrap,
+                            format!(
+                                "Renewal server started on port {} for overlap window",
+                                renew_port
+                            ),
+                        ),
+                    );
+                    warp::serve(renewal_filter)
+                        .tls()
+                        .cert_path(&prev_cert_path)
+                        .key_path(&prev_key_path)
+                        .run(renew_socket)
+                        .await;
+                });
+            }
+        }
+        Ok(None) => {}
+        Err(e) => {
+            eprintln!("[WARN] Failed to check overlap window: {}", e);
+        }
+    }
+
     let warp_filter = serverimpl::create_warp_filter();
     let server_ip: std::net::Ipv4Addr = bind_addr.parse().unwrap();
     let socket_addr = std::net::SocketAddr::new(std::net::IpAddr::V4(server_ip), bind_port);

@@ -33,6 +33,7 @@ use rocolatey_lib::server::RocoServerOutdatedResponse;
 use rocolatey_lib::server::RocoServerPackagesResponse;
 use rocolatey_lib::server::RocoServerSearchRequest;
 use rocolatey_lib::server::RocoServerTrustMode;
+use rocolatey_lib::server::RocoServerTrustRenewResponse;
 use rocolatey_lib::server::RocoServerTrustStateResponse;
 use rocolatey_lib::server::ROCO_SERVER_SCHEMA_VERSION;
 
@@ -682,6 +683,41 @@ async fn handle_phase_auth_rejection(err: warp::Rejection) -> Result<impl warp::
         ));
     }
     Err(err)
+}
+
+/// Build the renewal-only warp filter served on the old cert during overlap window.
+pub(crate) fn create_renewal_filter(
+    new_cert_pem: String,
+    continuity_proof: String,
+    previous_fingerprint: String,
+    new_fingerprint: String,
+    issued_at_utc: String,
+) -> impl Filter<Extract = impl warp::Reply, Error = std::convert::Infallible> + Clone {
+    let new_cert_pem = std::sync::Arc::new(new_cert_pem);
+    let continuity_proof = std::sync::Arc::new(continuity_proof);
+    let previous_fingerprint = std::sync::Arc::new(previous_fingerprint);
+    let new_fingerprint = std::sync::Arc::new(new_fingerprint);
+    let issued_at_utc = std::sync::Arc::new(issued_at_utc);
+
+    warp::any()
+        .and(warp::path!("rocolatey" / "trust" / "renew"))
+        .and(warp::path::end())
+        .and(warp::get())
+        .map(move || {
+            let response = RocoServerTrustRenewResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                new_server_cert_pem: (*new_cert_pem).clone(),
+                continuity_proof: (*continuity_proof).clone(),
+                previous_fingerprint: (*previous_fingerprint).clone(),
+                new_fingerprint: (*new_fingerprint).clone(),
+                issued_at_utc: (*issued_at_utc).clone(),
+            };
+            warp::reply::with_status(
+                warp::reply::json(&response),
+                StatusCode::OK,
+            )
+        })
+        .recover(|_| async { Ok::<_, std::convert::Infallible>(StatusCode::NOT_FOUND) })
 }
 
 async fn req_outdated(
