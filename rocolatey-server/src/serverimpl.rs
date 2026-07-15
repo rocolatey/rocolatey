@@ -1175,4 +1175,94 @@ mod phase7_integration_tests {
             );
         }
     }
+
+    #[tokio::test]
+    async fn renewal_endpoint_returns_valid_json() {
+        let filter = create_renewal_filter(
+            "new-cert-pem".to_string(),
+            "proof-abc->def".to_string(),
+            "old-fingerprint-aaa".to_string(),
+            "new-fingerprint-bbb".to_string(),
+            "2025-06-15T12:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("GET")
+            .path("/rocolatey/trust/renew")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 200);
+        let body: serde_json::Value = serde_json::from_slice(resp.body()).unwrap();
+        assert_eq!(body["schema_version"], 1);
+        assert_eq!(body["new_server_cert_pem"], "new-cert-pem");
+        assert_eq!(body["continuity_proof"], "proof-abc->def");
+        assert_eq!(body["previous_fingerprint"], "old-fingerprint-aaa");
+        assert_eq!(body["new_fingerprint"], "new-fingerprint-bbb");
+        assert_eq!(body["issued_at_utc"], "2025-06-15T12:00:00Z");
+    }
+
+    #[tokio::test]
+    async fn renewal_endpoint_returns_404_on_wrong_path() {
+        let filter = create_renewal_filter(
+            "cert".to_string(),
+            "proof".to_string(),
+            "old".to_string(),
+            "new".to_string(),
+            "2025-01-01T00:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("GET")
+            .path("/rocolatey/trust/wrong")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn renewal_endpoint_rejects_post() {
+        let filter = create_renewal_filter(
+            "cert".to_string(),
+            "proof".to_string(),
+            "old".to_string(),
+            "new".to_string(),
+            "2025-01-01T00:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("POST")
+            .path("/rocolatey/trust/renew")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn renewal_endpoint_deserializes_to_trust_renew_response() {
+        let filter = create_renewal_filter(
+            "new-cert-pem-data".to_string(),
+            "continuity-proof-data".to_string(),
+            "prev-fp-data".to_string(),
+            "new-fp-data".to_string(),
+            "2025-06-15T12:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("GET")
+            .path("/rocolatey/trust/renew")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 200);
+        let parsed: rocolatey_lib::server::RocoServerTrustRenewResponse =
+            serde_json::from_slice(resp.body()).expect("must deserialize to RocoServerTrustRenewResponse");
+        assert_eq!(parsed.schema_version, rocolatey_lib::server::ROCO_SERVER_SCHEMA_VERSION);
+        assert_eq!(parsed.new_server_cert_pem, "new-cert-pem-data");
+        assert_eq!(parsed.continuity_proof, "continuity-proof-data");
+        assert_eq!(parsed.previous_fingerprint, "prev-fp-data");
+        assert_eq!(parsed.new_fingerprint, "new-fp-data");
+    }
 }
