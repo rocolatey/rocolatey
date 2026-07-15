@@ -704,6 +704,17 @@ pub(crate) fn create_renewal_filter(
         .and(warp::path::end())
         .and(warp::get())
         .map(move || {
+            audit::emit_audit_event(
+                &audit::server_audit_log_path(),
+                &audit::AuditEvent::new(
+                    audit::AuditEventKind::Renewal,
+                    format!(
+                        "Renewal served: {} -> {}",
+                        &(*previous_fingerprint)[..std::cmp::min(12, (*previous_fingerprint).len())],
+                        &(*new_fingerprint)[..std::cmp::min(12, (*new_fingerprint).len())]
+                    ),
+                ),
+            );
             let response = RocoServerTrustRenewResponse {
                 schema_version: ROCO_SERVER_SCHEMA_VERSION,
                 new_server_cert_pem: (*new_cert_pem).clone(),
