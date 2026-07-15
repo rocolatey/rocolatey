@@ -246,7 +246,16 @@ fn bootstrap_local_trust() -> Result<(), Box<dyn std::error::Error>> {
 
     let account = std::env::var("USERNAME")
         .or_else(|_| std::env::var("USER"))
-        .unwrap_or_else(|_| "current-user".to_string());
+        .or_else(|_| std::env::var("USERPROFILE").map(|p| {
+            std::path::Path::new(&p)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or(p)
+        }))
+        .unwrap_or_else(|_| {
+            anstream::eprintln!("[WARN] Could not detect account name from environment; using fallback 'current-user' in audit log");
+            "current-user".to_string()
+        });
 
     if added_fingerprint {
         anstream::println!(
