@@ -264,11 +264,8 @@ fn write_emergency_override_record(
     path: &Path,
     record: &EmergencyOverrideRecord,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-
-    std::fs::write(path, serde_json::to_vec_pretty(record)?)?;
+    let content = serde_json::to_vec_pretty(record)?;
+    crate::bootstrap::write_atomic_with_backup(path, &content)?;
     Ok(())
 }
 
