@@ -202,6 +202,14 @@ fn bootstrap_local_trust() -> Result<(), Box<dyn std::error::Error>> {
     let client_cfg = ClientTlsConfig::default();
     let server_cfg = ServerTlsConfig::default();
 
+    // Ensure trust directories exist before any read/write operations
+    if let Some(parent) = client_cfg.cert_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    if let Some(parent) = server_cfg.cert_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
     // Account-scoped by design: client paths come from the current process user profile
     // while server trust remains machine/global via ServerTlsConfig default path.
     bootstrap::bootstrap_client_tls(&client_cfg)?;
