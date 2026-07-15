@@ -750,6 +750,17 @@ pub mod bootstrap {
             return Ok(());
         }
 
+        // If only one exists (partial state from interrupted bootstrap), remove it
+        // before regenerating to avoid inconsistent material on disk
+        if config.cert_exists() != config.key_exists() {
+            if config.cert_exists() {
+                let _ = fs::remove_file(&config.cert_path);
+            }
+            if config.key_exists() {
+                let _ = fs::remove_file(&config.key_path);
+            }
+        }
+
         // Generate new certificate
         let (cert_pem, key_pem) = generate_self_signed_cert("roco-client", CERT_VALIDITY_DAYS)?;
 
@@ -768,6 +779,17 @@ pub mod bootstrap {
         // If both cert and key exist, no bootstrap needed
         if config.cert_exists() && config.key_exists() {
             return Ok(());
+        }
+
+        // If only one exists (partial state from interrupted bootstrap), remove it
+        // before regenerating to avoid inconsistent material on disk
+        if config.cert_exists() != config.key_exists() {
+            if config.cert_exists() {
+                let _ = fs::remove_file(&config.cert_path);
+            }
+            if config.key_exists() {
+                let _ = fs::remove_file(&config.key_path);
+            }
         }
 
         // Generate new certificate
