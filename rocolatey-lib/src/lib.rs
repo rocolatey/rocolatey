@@ -626,14 +626,15 @@ pub mod bootstrap {
             prune_backups_for_target(target_path, MAX_BACKUPS_PER_TARGET)?;
         }
 
-        // Write to temporary file
+        // Write to temporary file (unique name prevents concurrent-write corruption)
         let temp_path = {
             let mut path = target_path.to_path_buf();
             let file_name = path.file_name().ok_or("Invalid file name")?
                 .to_string_lossy()
                 .to_string();
+            let unique_suffix = uuid::Uuid::new_v4().as_simple().to_string();
             path.pop();
-            path.push(format!(".tmp.{}", file_name));
+            path.push(format!(".tmp.{}.{}", file_name, unique_suffix));
             path
         };
 
@@ -669,7 +670,7 @@ pub mod bootstrap {
             .map(|e| format!(".{}", e))
             .unwrap_or_default();
 
-        let mut backups: Vec<(std::time::SystemTime, PathBuf)> = Vec::new();
+        let mut backups: Vec<(i64, PathBuf)> = Vec::new();
 
         for entry in fs::read_dir(parent)? {
             let entry = entry?;
@@ -705,11 +706,9 @@ pub mod bootstrap {
                 continue;
             }
 
-            let modified = entry
-                .metadata()
-                .and_then(|m| m.modified())
-                .unwrap_or(std::time::UNIX_EPOCH);
-            backups.push((modified, path));
+            // Use embedded timestamp from filename for reliable sorting across filesystems
+            let embedded_ts = middle.parse::<i64>().unwrap_or(0);
+            backups.push((embedded_ts, path));
         }
 
         backups.sort_by(|a, b| b.0.cmp(&a.0));
@@ -749,6 +748,17 @@ pub mod bootstrap {
             return Ok(());
         }
 
+        // If only one exists (partial state from interrupted bootstrap), remove it
+        // before regenerating to avoid inconsistent material on disk
+        if config.cert_exists() != config.key_exists() {
+            if config.cert_exists() {
+                let _ = fs::remove_file(&config.cert_path);
+            }
+            if config.key_exists() {
+                let _ = fs::remove_file(&config.key_path);
+            }
+        }
+
         // Generate new certificate
         let (cert_pem, key_pem) = generate_self_signed_cert("roco-client", CERT_VALIDITY_DAYS)?;
 
@@ -767,6 +777,17 @@ pub mod bootstrap {
         // If both cert and key exist, no bootstrap needed
         if config.cert_exists() && config.key_exists() {
             return Ok(());
+        }
+
+        // If only one exists (partial state from interrupted bootstrap), remove it
+        // before regenerating to avoid inconsistent material on disk
+        if config.cert_exists() != config.key_exists() {
+            if config.cert_exists() {
+                let _ = fs::remove_file(&config.cert_path);
+            }
+            if config.key_exists() {
+                let _ = fs::remove_file(&config.key_path);
+            }
         }
 
         // Generate new certificate

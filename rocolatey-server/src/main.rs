@@ -443,8 +443,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     serverimpl::install_authorization_runtime(auth_runtime);
                 } else {
                     eprintln!(
-                        "[HIGH] service startup could not initialize authorized_keys watcher runtime."
+                        "[HIGH] service startup could not initialize authorized_keys watcher runtime. Failing closed."
                     );
+                    return;
                 }
 
                 let warp_filter = serverimpl::create_warp_filter();

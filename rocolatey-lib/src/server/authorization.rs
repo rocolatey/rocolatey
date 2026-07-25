@@ -264,11 +264,8 @@ fn write_emergency_override_record(
     path: &Path,
     record: &EmergencyOverrideRecord,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-
-    std::fs::write(path, serde_json::to_vec_pretty(record)?)?;
+    let content = serde_json::to_vec_pretty(record)?;
+    crate::bootstrap::write_atomic_with_backup(path, &content)?;
     Ok(())
 }
 
@@ -394,6 +391,18 @@ pub fn check_authorization(
     cert_pem: Option<&[u8]>,
     authorized_keys_path: &Path,
 ) -> Result<Option<RocoServerDenyResponse>, Box<dyn std::error::Error>> {
+    let authorized_keys = load_authorized_keys(authorized_keys_path)?;
+    check_authorization_with_keys(request_id, cert_pem, &authorized_keys)
+}
+
+/// Check client authorization against a pre-loaded set of authorized fingerprints.
+/// Use this overload when keys are already cached (e.g. via AuthorizedKeysRuntime)
+/// to avoid redundant per-request file I/O.
+pub fn check_authorization_with_keys(
+    request_id: String,
+    cert_pem: Option<&[u8]>,
+    authorized_keys: &[String],
+) -> Result<Option<RocoServerDenyResponse>, Box<dyn std::error::Error>> {
     // Check if client certificate is present
     let cert_pem = match cert_pem {
         Some(cert) => cert,
@@ -412,8 +421,7 @@ pub fn check_authorization(
     let cert_fingerprint = fingerprint_from_cert(cert_pem)?;
 
     // Check if in empty enrollment mode
-    let empty_enrollment = is_empty_enrollment_mode(authorized_keys_path)?;
-    if empty_enrollment {
+    if authorized_keys.is_empty() {
         return Ok(Some(build_deny_response(
             request_id,
             RocoServerDenyCode::NotEnrolledClient,
@@ -430,8 +438,7 @@ pub fn check_authorization(
     }
 
     // Check if client is authorized
-    let is_auth = is_authorized(&cert_fingerprint, authorized_keys_path)?;
-    if !is_auth {
+    if !authorized_keys.contains(&cert_fingerprint) {
         return Ok(Some(build_deny_response(
             request_id,
             RocoServerDenyCode::NotEnrolledClient,
