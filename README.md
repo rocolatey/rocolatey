@@ -29,6 +29,8 @@ Individual non-commercial use is free. Organizations require a commercial
 license. See [rocolatey-server/LICENSE](rocolatey-server/LICENSE) for details
 or contact [rocolatey@mwallner.net](mailto:rocolatey@mwallner.net).
 
+> **Reminder:** The `roco` CLI and `rocolatey-lib` remain MIT-licensed regardless of organization size.
+
 > Important Notice — March 2024
 
 Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages), the main performance benefit of Rocolatey when dealing with this feed is gone. Bulk queries to this repository are no longer possible. Rocolatey will still be faster than `choco` with the CCR, although only when `choco.exe` is used with `--ignore-http-cache`.
@@ -121,7 +123,10 @@ $env:ROCO_SERVER_PORT="29295"
 roco outdated # checks for outdated packages on 172.42.10.101
 ```
 
-### Licensing for Organizations
+### Licensing for Organizations (rocolatey-server only)
+
+> **Note:** This section applies to `rocolatey-server` only.
+> The `roco` CLI and `rocolatey-lib` are always free and open-source under the [MIT license](LICENSE.txt).
 
 Organizations with 51+ employees or registered businesses need a commercial
 license to use rocolatey-server in production:
