@@ -96,6 +96,13 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
+      - name: License notice
+        run: |
+          echo "::notice::roco.exe: MIT License"
+          echo "::notice::rocolatey-server.exe: Business Source License 1.1 (BUSL-1.1)"
+          echo "::notice::Organizations require a commercial license for rocolatey-server."
+          echo "::notice::Contact rocolatey@mwallner.net for licensing."
+
       - name: Upload Release Build Artifacts
         uses: actions/upload-artifact@v4
         with: 

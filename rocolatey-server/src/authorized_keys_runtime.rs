@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Manfred Wallner
+// SPDX-License-Identifier: BUSL-1.1
+
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};

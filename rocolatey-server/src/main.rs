@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Manfred Wallner
+// SPDX-License-Identifier: BUSL-1.1
+
 use clap::{Arg, Command};
 mod authorized_keys_runtime;
 mod serverimpl;

@@ -16,6 +16,10 @@ Import-Module "$rocoTabCompletion" -ErrorAction SilentlyContinue
 	}
 }
 
+# BSL 1.1 Notice: rocolatey-server.exe is licensed under the Business Source License 1.1.
+# Individual non-commercial use is free. Organizations require a commercial license.
+# Contact rocolatey@mwallner.net for licensing.
+
 # If the server executable was packaged in tools, install it as a Windows Service using sc.exe
 $serverExe = Join-Path $toolsPath 'rocolatey-server.exe'
 $rocoExe = Join-Path $toolsPath 'roco.exe'

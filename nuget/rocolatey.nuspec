@@ -8,7 +8,7 @@ enclosed in quotation marks, you should use an editor that supports UTF-8, not t
     <version>0.9.5</version>
     <authors>Manfred Wallner</authors>
     <owners>Manfred Wallner</owners>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <summary>blazing fast Chocolatey queries</summary>
     <description>
 ## R(ocket-fast) Chocolatey queries.
@@ -48,10 +48,17 @@ Due to changes in the OData endpoint of the [Chocolatey Community Repository](ht
 the main performance benefit of roco when dealing with this feed is gone. - Bulk queries to this repository are not possible anymore.
 Rocolatey will still be faster than choco with CCR, although only in the `--ignore-http-cache` mode of `choco.exe`.
 
+### License Note
+
+This package contains `roco.exe` (MIT License) and `rocolatey-server.exe`
+(Business Source License 1.1). See LICENSE files in the package for full terms.
+Organizations require a commercial license for rocolatey-server.
+Contact: rocolatey@mwallner.net
+
     </description>
     <copyright>Copyright (c) 2020-2026 Manfred Wallner</copyright>
     <projectUrl>https://github.com/rocolatey/rocolatey</projectUrl>
-    <licenseUrl>https://raw.githubusercontent.com/rocolatey/rocolatey/master/LICENSE.txt</licenseUrl>
+    <licenseUrl>https://raw.githubusercontent.com/rocolatey/rocolatey/main/rocolatey-server/LICENSE</licenseUrl>
     <iconUrl>https://cdn.jsdelivr.net/gh/rocolatey/rocolatey/roco_sq.png</iconUrl>
     <language>en-US</language>
     <tags>chocolatey local tool roco</tags>
