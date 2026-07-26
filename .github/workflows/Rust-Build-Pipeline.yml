@@ -18,10 +18,22 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install cargo-bundle-licenses
+      run: cargo install cargo-bundle-licenses
+      
+    - name: generate license info (${{ matrix.os }})
+      run: cargo bundle-licenses --format json --output THIRDPARTY.json
+      
     - name: Build on ${{ matrix.os }}
       run: cargo build --verbose
+
     - name: Run tests on ${{ matrix.os }}
+      env:
+        ChocolateyInstall: test/fake_choco_home
+        RocolateyTestRoot: test/fake_choco_home
       run: cargo test --verbose
       
   build-test-nightly:
@@ -32,12 +44,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install cargo-bundle-licenses
+      run: cargo install cargo-bundle-licenses
+
+    - name: generate license info (${{ matrix.os }})
+      run: cargo bundle-licenses --format json --output THIRDPARTY.json
+
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
         override: true
     - uses: actions-rs/cargo@v1.0.3
+      env:
+        ChocolateyInstall: test/fake_choco_home
+        RocolateyTestRoot: test/fake_choco_home
       with: 
         command: test
         
@@ -51,6 +74,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
@@ -58,12 +82,27 @@ jobs:
           profile: minimal
           override: true
           target: ${{ matrix.target }}
+
+      - name: Install cargo-bundle-licenses
+        run: cargo install cargo-bundle-licenses
+
+      - name: generate license info (${{ matrix.os }})
+        run: cargo bundle-licenses --format json --output THIRDPARTY.json
+
       - name: Build target
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
+
+      - name: License notice
+        run: |
+          echo "::notice::roco.exe: MIT License"
+          echo "::notice::rocolatey-server.exe: Business Source License 1.1 (BUSL-1.1)"
+          echo "::notice::Organizations require a commercial license for rocolatey-server."
+          echo "::notice::Contact rocolatey@mwallner.net for licensing."
+
       - name: Upload Release Build Artifacts
         uses: actions/upload-artifact@v4
         with: 
