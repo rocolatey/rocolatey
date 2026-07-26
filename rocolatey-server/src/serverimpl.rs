@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Manfred Wallner
+// SPDX-License-Identifier: BUSL-1.1
+
 use std::sync::OnceLock;
 use chrono::Utc;
 use uuid::Uuid;
@@ -33,6 +36,7 @@ use rocolatey_lib::server::RocoServerOutdatedResponse;
 use rocolatey_lib::server::RocoServerPackagesResponse;
 use rocolatey_lib::server::RocoServerSearchRequest;
 use rocolatey_lib::server::RocoServerTrustMode;
+use rocolatey_lib::server::RocoServerTrustRenewResponse;
 use rocolatey_lib::server::RocoServerTrustStateResponse;
 use rocolatey_lib::server::ROCO_SERVER_SCHEMA_VERSION;
 
@@ -684,6 +688,52 @@ async fn handle_phase_auth_rejection(err: warp::Rejection) -> Result<impl warp::
     Err(err)
 }
 
+/// Build the renewal-only warp filter served on the old cert during overlap window.
+pub(crate) fn create_renewal_filter(
+    new_cert_pem: String,
+    continuity_proof: String,
+    previous_fingerprint: String,
+    new_fingerprint: String,
+    issued_at_utc: String,
+) -> impl Filter<Extract = impl warp::Reply, Error = std::convert::Infallible> + Clone {
+    let new_cert_pem = std::sync::Arc::new(new_cert_pem);
+    let continuity_proof = std::sync::Arc::new(continuity_proof);
+    let previous_fingerprint = std::sync::Arc::new(previous_fingerprint);
+    let new_fingerprint = std::sync::Arc::new(new_fingerprint);
+    let issued_at_utc = std::sync::Arc::new(issued_at_utc);
+
+    warp::any()
+        .and(warp::path!("rocolatey" / "trust" / "renew"))
+        .and(warp::path::end())
+        .and(warp::get())
+        .map(move || {
+            audit::emit_audit_event(
+                &audit::server_audit_log_path(),
+                &audit::AuditEvent::new(
+                    audit::AuditEventKind::Renewal,
+                    format!(
+                        "Renewal served: {} -> {}",
+                        &(*previous_fingerprint)[..std::cmp::min(12, (*previous_fingerprint).len())],
+                        &(*new_fingerprint)[..std::cmp::min(12, (*new_fingerprint).len())]
+                    ),
+                ),
+            );
+            let response = RocoServerTrustRenewResponse {
+                schema_version: ROCO_SERVER_SCHEMA_VERSION,
+                new_server_cert_pem: (*new_cert_pem).clone(),
+                continuity_proof: (*continuity_proof).clone(),
+                previous_fingerprint: (*previous_fingerprint).clone(),
+                new_fingerprint: (*new_fingerprint).clone(),
+                issued_at_utc: (*issued_at_utc).clone(),
+            };
+            warp::reply::with_status(
+                warp::reply::json(&response),
+                StatusCode::OK,
+            )
+        })
+        .recover(|_| async { Ok::<_, std::convert::Infallible>(StatusCode::NOT_FOUND) })
+}
+
 async fn req_outdated(
     limit_output: bool,
     list_output: bool,
@@ -1127,5 +1177,95 @@ mod phase7_integration_tests {
                 path
             );
         }
+    }
+
+    #[tokio::test]
+    async fn renewal_endpoint_returns_valid_json() {
+        let filter = create_renewal_filter(
+            "new-cert-pem".to_string(),
+            "proof-abc->def".to_string(),
+            "old-fingerprint-aaa".to_string(),
+            "new-fingerprint-bbb".to_string(),
+            "2025-06-15T12:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("GET")
+            .path("/rocolatey/trust/renew")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 200);
+        let body: serde_json::Value = serde_json::from_slice(resp.body()).unwrap();
+        assert_eq!(body["schema_version"], 1);
+        assert_eq!(body["new_server_cert_pem"], "new-cert-pem");
+        assert_eq!(body["continuity_proof"], "proof-abc->def");
+        assert_eq!(body["previous_fingerprint"], "old-fingerprint-aaa");
+        assert_eq!(body["new_fingerprint"], "new-fingerprint-bbb");
+        assert_eq!(body["issued_at_utc"], "2025-06-15T12:00:00Z");
+    }
+
+    #[tokio::test]
+    async fn renewal_endpoint_returns_404_on_wrong_path() {
+        let filter = create_renewal_filter(
+            "cert".to_string(),
+            "proof".to_string(),
+            "old".to_string(),
+            "new".to_string(),
+            "2025-01-01T00:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("GET")
+            .path("/rocolatey/trust/wrong")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn renewal_endpoint_rejects_post() {
+        let filter = create_renewal_filter(
+            "cert".to_string(),
+            "proof".to_string(),
+            "old".to_string(),
+            "new".to_string(),
+            "2025-01-01T00:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("POST")
+            .path("/rocolatey/trust/renew")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn renewal_endpoint_deserializes_to_trust_renew_response() {
+        let filter = create_renewal_filter(
+            "new-cert-pem-data".to_string(),
+            "continuity-proof-data".to_string(),
+            "prev-fp-data".to_string(),
+            "new-fp-data".to_string(),
+            "2025-06-15T12:00:00Z".to_string(),
+        );
+
+        let resp = request()
+            .method("GET")
+            .path("/rocolatey/trust/renew")
+            .reply(&filter)
+            .await;
+
+        assert_eq!(resp.status(), 200);
+        let parsed: rocolatey_lib::server::RocoServerTrustRenewResponse =
+            serde_json::from_slice(resp.body()).expect("must deserialize to RocoServerTrustRenewResponse");
+        assert_eq!(parsed.schema_version, rocolatey_lib::server::ROCO_SERVER_SCHEMA_VERSION);
+        assert_eq!(parsed.new_server_cert_pem, "new-cert-pem-data");
+        assert_eq!(parsed.continuity_proof, "continuity-proof-data");
+        assert_eq!(parsed.previous_fingerprint, "prev-fp-data");
+        assert_eq!(parsed.new_fingerprint, "new-fp-data");
     }
 }

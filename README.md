@@ -16,6 +16,19 @@ R(ocket-fast) [Chocolatey](https://chocolatey.org/).
 
 ![roco logo](./roco.png)
 
+## Licensing
+
+| Component | License |
+|-----------|---------|
+| `roco` (CLI) | [MIT](LICENSE.txt) |
+| `rocolatey-lib` | [MIT](LICENSE.txt) |
+| `rocolatey-server` | [BUSL-1.1](rocolatey-server/LICENSE) |
+
+`rocolatey-server` is source-available under the Business Source License 1.1.
+Individual non-commercial use is free. Organizations require a commercial
+license. See [rocolatey-server/LICENSE](rocolatey-server/LICENSE) for details
+or contact [rocolatey@mwallner.net](mailto:rocolatey@mwallner.net).
+
 > Important Notice — March 2024
 
 Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages), the main performance benefit of Rocolatey when dealing with this feed is gone. Bulk queries to this repository are no longer possible. Rocolatey will still be faster than `choco` with the CCR, although only when `choco.exe` is used with `--ignore-http-cache`.
@@ -87,11 +100,9 @@ Mimics the output of `choco outdated`. Use the `-r` switch in automated environm
 
 ## rocolatey-server
 
-**Unstable — use at your own risk**
+**Source-available under [BUSL-1.1](rocolatey-server/LICENSE)**
 
 Exposes a REST API for fetching Chocolatey package information from a host.
-
-There is currently no authentication or encryption in place — set up a reverse proxy if you plan to use it outside your homelab.
 
 Rocolatey-server listens on port `29295` by default (which is "ro" in hex). You can specify the address and port to listen on; use `-h` to display help.
 
@@ -109,3 +120,17 @@ $env:ROCO_SERVER_PORT="29295"
 
 roco outdated # checks for outdated packages on 172.42.10.101
 ```
+
+### Licensing for Organizations
+
+Organizations with 51+ employees or registered businesses need a commercial
+license to use rocolatey-server in production:
+
+| Employees | Price per user/month |
+|-----------|---------------------|
+| 1-50 | Free |
+| 51-200 | $1 |
+| 200+ | $2 |
+
+Special rates available for educational institutions, non-profits, and
+open-source projects. Contact: [rocolatey@mwallner.net](mailto:rocolatey@mwallner.net)

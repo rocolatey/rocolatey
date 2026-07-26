@@ -1001,3 +1001,80 @@ async fn ssl_deny_contract_schema_version_matches_client_upgrade_assumption() {
     let _ = server.kill();
     let _ = server.wait();
 }
+
+fn write_manual_rotation_state(
+    server_root: &Path,
+    new_cert_pem: &[u8],
+    previous_fingerprint: &str,
+) {
+    use rocolatey_lib::bootstrap::fingerprint_full;
+    use rocolatey_lib::server::authorization::build_continuity_proof;
+
+    let identity_fingerprint = fingerprint_full(new_cert_pem).expect("fingerprint new cert");
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time after epoch");
+    let issued_at = now - Duration::from_secs(200 * 3600);
+    let rotate_after = now - Duration::from_secs(100 * 3600);
+    let overlap_until = now + Duration::from_secs(50 * 3600);
+
+    let to_rfc3339 = |d: Duration| -> String {
+        let secs = d.as_secs();
+        let dt = time::OffsetDateTime::from_unix_timestamp(secs as i64)
+            .expect("valid unix timestamp");
+        dt.format(&time::format_description::well_known::Rfc3339)
+            .expect("format rfc3339")
+    };
+
+    let continuity_proof = build_continuity_proof(previous_fingerprint, &identity_fingerprint);
+
+    let state = serde_json::json!({
+        "identity_fingerprint": identity_fingerprint,
+        "issued_at_utc": to_rfc3339(issued_at),
+        "rotate_after_utc": to_rfc3339(rotate_after),
+        "overlap_until_utc": to_rfc3339(overlap_until),
+        "jitter_seconds": 0,
+        "previous_identity_fingerprint": previous_fingerprint,
+        "continuity_proof": continuity_proof,
+    });
+
+    let state_path = server_root.join("server_rotation_state.json");
+    let serialized = serde_json::to_string_pretty(&state).expect("serialize rotation state");
+    std::fs::write(&state_path, serialized).expect("write rotation state");
+}
+
+#[test]
+fn ssl_renewal_response_deserializes_correctly() {
+    let renew_json = serde_json::json!({
+        "schema_version": 1,
+        "new_server_cert_pem": "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----",
+        "continuity_proof": "abc123->def456",
+        "previous_fingerprint": "abc123",
+        "new_fingerprint": "def456",
+        "issued_at_utc": "2025-06-15T12:00:00Z"
+    });
+
+    let parsed: rocolatey_lib::server::RocoServerTrustRenewResponse =
+        serde_json::from_value(renew_json).expect("must deserialize renewal response");
+    assert_eq!(parsed.schema_version, rocolatey_lib::server::ROCO_SERVER_SCHEMA_VERSION);
+    assert_eq!(parsed.previous_fingerprint, "abc123");
+    assert_eq!(parsed.new_fingerprint, "def456");
+    assert_eq!(parsed.continuity_proof, "abc123->def456");
+    assert!(parsed.new_server_cert_pem.contains("BEGIN CERTIFICATE"));
+}
+
+#[test]
+fn ssl_continuity_proof_roundtrip() {
+    use rocolatey_lib::server::authorization::{build_continuity_proof, verify_continuity_proof};
+
+    let old_fp = "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    let new_fp = "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=";
+
+    let proof = build_continuity_proof(old_fp, new_fp);
+    assert!(verify_continuity_proof(old_fp, new_fp, &proof));
+
+    // Tampered proof should fail
+    let bad_proof = build_continuity_proof(new_fp, old_fp);
+    assert!(!verify_continuity_proof(old_fp, new_fp, &bad_proof));
+}

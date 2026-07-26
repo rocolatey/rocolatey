@@ -1,21 +1,76 @@
-MIT License
+Business Source License 1.1
 
-Copyright (c) 2020 Manfred Wallner
+Terms
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, redistribute, and make non-production use of the Licensed Work. The
+Licensor may make an Additional Use Grant, above, permitting limited
+production use.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Effective on the Change Date, or the fourth anniversary of the first publicly
+available distribution of a specific version of the Licensed Work, whichever
+is earlier, the Licensor will make the Licensed Work available under an Open
+Source License.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+"Change Date" means January 1, 2030.
+
+"Change License" means the MIT License.
+
+"Licensed Work" means the software identified as rocolatey-server as made
+available by the Licensor under these terms, (c) 2026 Manfred Wallner.
+
+Additional Use Grant
+
+The Licensor grants the following additional permissions:
+
+(a) Individual non-commercial use. Use of the Licensed Work by a single
+    individual for personal, non-commercial purposes on no more than one (1)
+    Host is permitted free of charge.
+
+(b) Organizational production use. Use of the Licensed Work by an
+    Organization requires a commercial license from the Licensor, at the
+    following monthly rates per User:
+
+    - Organizations with 1 to 50 employees: Free
+    - Organizations with 51 to 200 employees: $1 per User per month
+    - Organizations with 200 or more employees: $2 per User per month
+
+    Special rates may be available for educational institutions, non-profit
+    organizations, open-source projects, and other qualifying use cases.
+    Organizations seeking alternative pricing should contact the Licensor
+    at rocolatey@mwallner.net to discuss their requirements.
+
+    "Organization" means any entity with 2 or more employees or contractors,
+    or any registered business, government entity, or non-profit organization.
+
+    "User" means any individual who uses the Licensed Work.
+
+    "Host" means a single machine, virtual machine, or container instance
+    on which the Licensed Work is installed and running.
+
+    To obtain a commercial license, contact: rocolatey@mwallner.net
+
+(c) Competitive use restriction. You may not use the Licensed Work to offer
+    a competing commercial product or service providing substantially similar
+    functionality.
+
+Redistribution. You may not redistribute the source or binary form of the
+Licensed Work without a separate distribution license from the Licensor.
+
+You must conspicuously display this License on each original or modified
+copy of the Licensed Work. If you receive the Licensed Work in original or
+modified form from a third party, the terms and conditions set forth in this
+License apply to your use of that work.
+
+Any use of the Licensed Work in violation of this License will automatically
+terminate your rights under this License for the current and all other
+versions of the Licensed Work.
+
+This License does not grant you any right in any trademark or logo of
+Licensor or its affiliates.
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON
+AN "AS IS" BASIS. LICENSOR HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS,
+EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
+TITLE.

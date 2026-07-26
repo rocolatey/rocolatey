@@ -37,6 +37,8 @@ pub enum AuditEventKind {
     WatcherWarning,
     /// The authorized_keys file was reloaded successfully by the watcher.
     WatcherReload,
+    /// A certificate renewal was served to a client during the overlap window.
+    Renewal,
 }
 
 /// A structured audit event. All events are written as a single JSON line.
@@ -194,6 +196,7 @@ mod tests {
             (AuditEventKind::WatcherReload, "watcher_reload"),
             (AuditEventKind::ContinuityCheck, "continuity_check"),
             (AuditEventKind::ExpiryFailure, "expiry_failure"),
+            (AuditEventKind::Renewal, "renewal"),
         ];
         for (kind, expected_str) in cases {
             let event = AuditEvent::new(kind.clone(), "msg");

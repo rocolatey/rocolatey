@@ -24,6 +24,8 @@ pub mod server {
     pub const ROCO_SERVER_TRUST_DIR_NAME: &str = "server";
     pub const ROCO_SERVER_CERT_FILE: &str = "server.crt.pem";
     pub const ROCO_SERVER_KEY_FILE: &str = "server.key.pem";
+    pub const ROCO_SERVER_PREV_CERT_FILE: &str = "server.crt.pem.prev";
+    pub const ROCO_SERVER_PREV_KEY_FILE: &str = "server.key.pem.prev";
     pub const ROCO_SERVER_AUTHORIZED_KEYS_FILE: &str = "authorized_keys";
     pub const ROCO_SERVER_ROTATION_STATE_FILE: &str = "server_rotation_state.json";
     pub const ROCO_SERVER_CONTINUITY_PROOF_FILE: &str = "server_key_continuity.json";
@@ -75,6 +77,16 @@ pub mod server {
         pub authorized_key_count: usize,
         pub authorized_keys_watcher_healthy: bool,
         pub emergency_override_active: bool,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+    pub struct RocoServerTrustRenewResponse {
+        pub schema_version: u32,
+        pub new_server_cert_pem: String,
+        pub continuity_proof: String,
+        pub previous_fingerprint: String,
+        pub new_fingerprint: String,
+        pub issued_at_utc: String,
     }
 
     #[derive(Serialize, Deserialize, Clone)]
@@ -345,6 +357,20 @@ pub mod server {
                 .unwrap_or_else(|| std::path::Path::new("."))
                 .join(ROCO_SERVER_EMERGENCY_OVERRIDE_FILE)
         }
+
+        pub fn prev_cert_path(&self) -> PathBuf {
+            self.cert_path
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new("."))
+                .join(ROCO_SERVER_PREV_CERT_FILE)
+        }
+
+        pub fn prev_key_path(&self) -> PathBuf {
+            self.key_path
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new("."))
+                .join(ROCO_SERVER_PREV_KEY_FILE)
+        }
     }
 
     #[derive(Debug, Clone)]
@@ -492,6 +518,35 @@ pub mod bootstrap {
         let content = std::fs::read_to_string(rotation_state_path)?;
         let state = serde_json::from_str::<RotationStateRecord>(&content)?;
         Ok(Some(state))
+    }
+
+    /// Check if the server is currently within the overlap window after a rotation.
+    /// Returns Ok(Some((prev_cert_pem, prev_key_pem))) if in overlap window,
+    /// Ok(None) if not in overlap window or no previous materials exist.
+    pub fn check_overlap_window(
+        config: &server::ServerTlsConfig,
+    ) -> Result<Option<(Vec<u8>, Vec<u8>)>, Box<dyn std::error::Error>> {
+        let state = match load_rotation_state(&config.rotation_state_path())? {
+            Some(s) => s,
+            None => return Ok(None),
+        };
+
+        let now = chrono::Utc::now();
+        // In overlap window if: rotation has happened (rotate_after has passed) and overlap hasn't expired
+        if now < state.rotate_after_utc || now >= state.overlap_until_utc {
+            return Ok(None);
+        }
+
+        // Load previous cert and key
+        let prev_cert_path = config.prev_cert_path();
+        let prev_key_path = config.prev_key_path();
+        if !prev_cert_path.exists() || !prev_key_path.exists() {
+            return Ok(None);
+        }
+
+        let prev_cert = std::fs::read(&prev_cert_path)?;
+        let prev_key = std::fs::read(&prev_key_path)?;
+        Ok(Some((prev_cert, prev_key)))
     }
 
     pub fn auto_rotate_server_tls_if_due(
@@ -813,6 +868,14 @@ pub mod bootstrap {
         let previous_identity = std::fs::read(&config.cert_path)
             .ok()
             .and_then(|pem| fingerprint_full(&pem).ok());
+
+        // Save previous cert/key for overlap window renewal before overwriting
+        if let Ok(prev_cert) = std::fs::read(&config.cert_path) {
+            let _ = write_atomic_with_backup(&config.prev_cert_path(), &prev_cert);
+        }
+        if let Ok(prev_key) = std::fs::read(&config.key_path) {
+            let _ = write_atomic_with_backup(&config.prev_key_path(), &prev_key);
+        }
 
         let (cert_pem, key_pem) = generate_self_signed_cert("rocolatey-server", CERT_VALIDITY_DAYS)?;
 

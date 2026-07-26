@@ -2,7 +2,7 @@ use reqwest::header::CONTENT_TYPE;
 use serde_json;
 use std::time::Duration;
 
-use crate::server::{JobStatus, RocoServerChocoCommandRequest, ClientTlsConfig};
+use crate::server::{JobStatus, RocoServerChocoCommandRequest, ClientTlsConfig, RocoServerTrustRenewResponse};
 use reqwest::ClientBuilder;
 use crate::roco::client_tls;
 
@@ -133,7 +133,12 @@ pub async fn run_on_server_simple_get(request_path: &str, request_body: &str) ->
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                // Renewal succeeded — caller should retry the original request
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -175,7 +180,11 @@ pub async fn run_on_server_simple_get_with_config(
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -215,7 +224,11 @@ pub async fn run_on_server_simple_post(request_path: &str, request_body: &str) -
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -257,7 +270,11 @@ pub async fn run_on_server_simple_post_with_config(
             }
         },
         Err(e) => {
-            anstream::eprintln!("Request to {} failed: {}", url, e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("Request to {} failed: {}", url, e);
+            }
             None
         }
     }
@@ -353,7 +370,11 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
             }
         }
         Err(e) => {
-            anstream::eprintln!("request failed: {}", e);
+            if handle_tls_cert_error(&e).await {
+                anstream::eprintln!("[INFO] Server certificate renewed. Please retry your request.");
+            } else {
+                anstream::eprintln!("request failed: {}", e);
+            }
             return -1;
         }
     };
@@ -428,6 +449,173 @@ pub async fn run_on_server_poll(choco_args: &[&str], package_names: &[&str]) -> 
                     return -1;
                 }
             }
+        }
+    }
+}
+
+/// Rate-limit file for renewal attempts (one per hour)
+fn renewal_rate_limit_path() -> std::path::PathBuf {
+    let tls_config = ClientTlsConfig::default();
+    tls_config
+        .cert_path
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("."))
+        .join(".renewal_last_attempt")
+}
+
+fn is_renewal_rate_limited() -> bool {
+    let path = renewal_rate_limit_path();
+    if !path.exists() {
+        return false;
+    }
+    let Ok(content) = std::fs::read_to_string(&path) else {
+        return false;
+    };
+    let Ok(last_attempt) = content.trim().parse::<i64>() else {
+        return false;
+    };
+    let now = chrono::Utc::now().timestamp();
+    // Rate limit: once per hour (3600 seconds)
+    now - last_attempt < 3600
+}
+
+fn record_renewal_attempt() {
+    let path = renewal_rate_limit_path();
+    let now = chrono::Utc::now().timestamp();
+    let _ = std::fs::write(&path, now.to_string());
+}
+
+/// Check if an error from reqwest is a TLS certificate mismatch.
+fn is_tls_cert_mismatch_error(err: &reqwest::Error) -> bool {
+    let err_str = err.to_string();
+    // reqwest/rustls reports cert mismatch with these patterns
+    err_str.contains("certificate")
+        && (err_str.contains("unknown issuer")
+            || err_str.contains("bad signature")
+            || err_str.contains("cert")
+            || err_str.contains("peer")
+            || err_str.contains("verify"))
+}
+
+/// Attempt to renew the pinned server certificate from the overlap window renewal endpoint.
+///
+/// This function:
+/// 1. Checks if renewal is rate-limited (once per hour)
+/// 2. Connects to the renewal endpoint on port+1 using the old pinned cert
+/// 3. Verifies the continuity proof
+/// 4. Updates the known_server_keys file with the new cert
+///
+/// Returns Ok(true) if renewal succeeded, Ok(false) if skipped, Err on failure.
+pub async fn try_renew_pinned_server_cert() -> Result<bool, Box<dyn std::error::Error>> {
+    if is_renewal_rate_limited() {
+        return Ok(false);
+    }
+
+    let tls_config = ClientTlsConfig::default();
+    if !tls_config.known_server_keys_exist() {
+        return Ok(false);
+    }
+
+    let (_, ip) = crate::server::get_server_ip();
+    let (_, port) = crate::server::get_server_port();
+    let server_port: u16 = port.parse().unwrap_or(29295);
+    let renewal_port = server_port + 1;
+
+    // Read old pinned cert for the renewal connection
+    let old_pinned_pem = tls_config.read_known_server_keys()?;
+    let old_pinned_cert = reqwest::Certificate::from_pem(old_pinned_pem.as_bytes())?;
+
+    // Build a client that trusts only the old pinned cert
+    let renew_client = ClientBuilder::new()
+        .tls_built_in_root_certs(false)
+        .add_root_certificate(old_pinned_cert)
+        .connect_timeout(Duration::from_secs(3))
+        .timeout(Duration::from_secs(10))
+        .build()?;
+
+    let url = format!("https://{}:{}/rocolatey/trust/renew", ip, renewal_port);
+
+    let resp = match renew_client.get(&url).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            anstream::eprintln!("[INFO] Renewal endpoint not available: {}", e);
+            record_renewal_attempt();
+            return Ok(false);
+        }
+    };
+
+    if !resp.status().is_success() {
+        anstream::eprintln!(
+            "[WARN] Renewal endpoint returned status {}",
+            resp.status()
+        );
+        record_renewal_attempt();
+        return Ok(false);
+    }
+
+    let renew_response: RocoServerTrustRenewResponse = resp.json().await?;
+
+    // Verify continuity proof
+    let old_fingerprint = crate::bootstrap::fingerprint_full(
+        &std::fs::read(&tls_config.known_server_keys_path)?,
+    )?;
+
+    if renew_response.previous_fingerprint != old_fingerprint {
+        anstream::eprintln!(
+            "[WARN] Renewal response previous fingerprint does not match our pinned cert. Possible MITM."
+        );
+        record_renewal_attempt();
+        return Ok(false);
+    }
+
+    let expected_proof = crate::server::authorization::build_continuity_proof(
+        &renew_response.previous_fingerprint,
+        &renew_response.new_fingerprint,
+    );
+
+    if expected_proof != renew_response.continuity_proof {
+        anstream::eprintln!(
+            "[WARN] Renewal continuity proof mismatch. Possible MITM."
+        );
+        record_renewal_attempt();
+        return Ok(false);
+    }
+
+    // Update pinned server cert
+    let new_cert_pem = renew_response.new_server_cert_pem.as_bytes();
+    crate::bootstrap::write_atomic_with_backup(
+        &tls_config.known_server_keys_path,
+        new_cert_pem,
+    )?;
+
+    let new_short = crate::server::authorization::short_fingerprint(&renew_response.new_fingerprint);
+    let old_short = crate::server::authorization::short_fingerprint(&old_fingerprint);
+    anstream::println!(
+        "[OK] Server certificate renewed: {} -> {} (overlap window auto-renewal)",
+        old_short, new_short
+    );
+
+    record_renewal_attempt();
+    Ok(true)
+}
+
+/// Check if a reqwest error indicates a TLS certificate issue that might
+/// trigger auto-renewal. If so, attempt renewal and return true if successful.
+pub async fn handle_tls_cert_error(err: &reqwest::Error) -> bool {
+    if !is_tls_cert_mismatch_error(err) {
+        return false;
+    }
+
+    anstream::eprintln!(
+        "[INFO] TLS certificate mismatch detected. Attempting auto-renewal via overlap window..."
+    );
+
+    match try_renew_pinned_server_cert().await {
+        Ok(true) => true,
+        Ok(false) => false,
+        Err(e) => {
+            anstream::eprintln!("[WARN] Auto-renewal attempt failed: {}", e);
+            false
         }
     }
 }
