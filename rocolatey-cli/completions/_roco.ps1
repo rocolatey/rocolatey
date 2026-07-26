@@ -21,62 +21,195 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
 
     $completions = @(switch ($command) {
         'roco' {
-            [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('-V', 'V ', [CompletionResultType]::ParameterName, 'Print version')
-            [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list local installed packages')
             [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'list packages in lib-bad/')
             [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'Returns a list of outdated packages.')
             [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'list choco sources')
+            [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'search for packages')
+            [CompletionResult]::new('license', 'license', [CompletionResultType]::ParameterValue, 'display license information')
+            [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
+            [CompletionResult]::new('install', 'install', [CompletionResultType]::ParameterValue, 'install choco packages (using choco.exe)')
+            [CompletionResult]::new('uninstall', 'uninstall', [CompletionResultType]::ParameterValue, 'uninstall choco packages (using choco.exe)')
+            [CompletionResult]::new('pin', 'pin', [CompletionResultType]::ParameterValue, 'manage package pins')
+            [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'manage roco server configuration and TLS setup')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
         'roco;list' {
-            [CompletionResult]::new('-r', 'r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', 'limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('-v', 'v', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('--verbose', 'verbose', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('--dependency-tree', 'dependency-tree', [CompletionResultType]::ParameterName, 'list dependencies')
-            [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--dependency-tree', '--dependency-tree', [CompletionResultType]::ParameterName, 'list dependencies')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
         'roco;bad' {
-            [CompletionResult]::new('-r', 'r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', 'limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('-v', 'v', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('--verbose', 'verbose', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
         'roco;outdated' {
-            [CompletionResult]::new('--choco-mode', 'choco-mode', [CompletionResultType]::ParameterName, 'enables ''ignore-pinned'' and ''ignore-unfound'' 
-(otherwise they are true by default, even if not set)')
-            [CompletionResult]::new('--ignore-pinned', 'ignore-pinned', [CompletionResultType]::ParameterName, 'ignore any pinned packages 
-(default, unless ''choco-mode'' is set)')
-            [CompletionResult]::new('--ignore-unfound', 'ignore-unfound', [CompletionResultType]::ParameterName, 'ignore any unfound packages 
-(default, unless ''choco-mode'' is set)')
-            [CompletionResult]::new('-l', 'l', [CompletionResultType]::ParameterName, 'output a whitespace-separated list of results')
-            [CompletionResult]::new('-p', 'p', [CompletionResultType]::ParameterName, 'include prerelease versions')
-            [CompletionResult]::new('--pre', 'pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
-            [CompletionResult]::new('-r', 'r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', 'limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('-v', 'v', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('--verbose', 'verbose', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('--sslcheck', 'sslcheck', [CompletionResultType]::ParameterName, 'require https/ssl-validation')
-            [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('--choco-mode', '--choco-mode', [CompletionResultType]::ParameterName, 'enables ''ignore-pinned'' and ''ignore-unfound''  (otherwise they are true by default, even if not set)')
+            [CompletionResult]::new('--ignore-pinned', '--ignore-pinned', [CompletionResultType]::ParameterName, 'ignore any pinned packages  (default, unless ''choco-mode'' is set)')
+            [CompletionResult]::new('--ignore-unfound', '--ignore-unfound', [CompletionResultType]::ParameterName, 'ignore any unfound packages  (default, unless ''choco-mode'' is set)')
+            [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'output a whitespace-separated list of results')
+            [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'include prerelease versions')
+            [CompletionResult]::new('--pre', '--pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--sslcheck', '--sslcheck', [CompletionResultType]::ParameterName, 'require https/ssl-validation')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
         'roco;source' {
-            [CompletionResult]::new('-r', 'r', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('--limitoutput', 'limitoutput', [CompletionResultType]::ParameterName, 'limit the output to essential information')
-            [CompletionResult]::new('-v', 'v', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('--verbose', 'verbose', [CompletionResultType]::ParameterName, 'be verbose')
-            [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;search' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;license' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-f', '-f', [CompletionResultType]::ParameterName, 'display full license information')
+            [CompletionResult]::new('--full', '--full', [CompletionResultType]::ParameterName, 'display full license information')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;upgrade' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'include prerelease versions')
+            [CompletionResult]::new('--pre', '--pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--sslcheck', '--sslcheck', [CompletionResultType]::ParameterName, 'require https/ssl-validation')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;install' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'include prerelease versions')
+            [CompletionResult]::new('--pre', '--pre', [CompletionResultType]::ParameterName, 'include prerelease versions')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--sslcheck', '--sslcheck', [CompletionResultType]::ParameterName, 'require https/ssl-validation')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;uninstall' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;pin' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list pinned packages')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'pin a package to prevent upgrades')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'remove a package pin')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'roco;pin;list' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--limitoutput', '--limitoutput', [CompletionResultType]::ParameterName, 'limit output to essential information (automation-safe, no ANSI colors)')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'output results in JSON format')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;pin;add' {
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'specific version to pin')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;pin;remove' {
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'specific version to unpin')
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'roco;pin;help' {
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list pinned packages')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'pin a package to prevent upgrades')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'remove a package pin')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'roco;pin;help;list' {
+            break
+        }
+        'roco;pin;help;add' {
+            break
+        }
+        'roco;pin;help;remove' {
+            break
+        }
+        'roco;pin;help;help' {
+            break
+        }
+        'roco;server' {
+            [CompletionResult]::new('--color', '--color', [CompletionResultType]::ParameterName, 'Control color output: auto (default), always, or never. -r always stays uncolored')
+            [CompletionResult]::new('--setup-tls-help', '--setup-tls-help', [CompletionResultType]::ParameterName, 'display TLS setup status and enrollment guidance')
+            [CompletionResult]::new('--gen-cert', '--gen-cert', [CompletionResultType]::ParameterName, 'generate TLS certificates for client and server')
+            [CompletionResult]::new('--force', '--force', [CompletionResultType]::ParameterName, 'regenerate certificates even if they exist (creates timestamped backups)')
+            [CompletionResult]::new('--bootstrap-local-trust', '--bootstrap-local-trust', [CompletionResultType]::ParameterName, 'bootstrap local key exchange and enroll current account client fingerprint on this host')
+            [CompletionResult]::new('-v', '-v', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('--verbose', '--verbose', [CompletionResultType]::ParameterName, 'be verbose')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
         'roco;help' {
@@ -84,6 +217,13 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             [CompletionResult]::new('bad', 'bad', [CompletionResultType]::ParameterValue, 'list packages in lib-bad/')
             [CompletionResult]::new('outdated', 'outdated', [CompletionResultType]::ParameterValue, 'Returns a list of outdated packages.')
             [CompletionResult]::new('source', 'source', [CompletionResultType]::ParameterValue, 'list choco sources')
+            [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'search for packages')
+            [CompletionResult]::new('license', 'license', [CompletionResultType]::ParameterValue, 'display license information')
+            [CompletionResult]::new('upgrade', 'upgrade', [CompletionResultType]::ParameterValue, 'upgrade outdated choco packages (using choco.exe)')
+            [CompletionResult]::new('install', 'install', [CompletionResultType]::ParameterValue, 'install choco packages (using choco.exe)')
+            [CompletionResult]::new('uninstall', 'uninstall', [CompletionResultType]::ParameterValue, 'uninstall choco packages (using choco.exe)')
+            [CompletionResult]::new('pin', 'pin', [CompletionResultType]::ParameterValue, 'manage package pins')
+            [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'manage roco server configuration and TLS setup')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -97,6 +237,39 @@ Register-ArgumentCompleter -Native -CommandName 'roco' -ScriptBlock {
             break
         }
         'roco;help;source' {
+            break
+        }
+        'roco;help;search' {
+            break
+        }
+        'roco;help;license' {
+            break
+        }
+        'roco;help;upgrade' {
+            break
+        }
+        'roco;help;install' {
+            break
+        }
+        'roco;help;uninstall' {
+            break
+        }
+        'roco;help;pin' {
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'list pinned packages')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'pin a package to prevent upgrades')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'remove a package pin')
+            break
+        }
+        'roco;help;pin;list' {
+            break
+        }
+        'roco;help;pin;add' {
+            break
+        }
+        'roco;help;pin;remove' {
+            break
+        }
+        'roco;help;server' {
             break
         }
         'roco;help;help' {

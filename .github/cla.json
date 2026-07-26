@@ -1,0 +1,6 @@
+{
+  "repository": "rocolatey/rocolatey",
+  "path": "CONTRIBUTING.md",
+  "claFamily": "Rocolatey Contributor License Agreement",
+  "allowlist": ["dependabot[bot]", "github-actions[bot]", "renovate[bot]"]
+}

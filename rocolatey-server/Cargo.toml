@@ -1,13 +1,31 @@
 [package]
+license = "BUSL-1.1"
 name = "rocolatey-server"
-version = "0.9.1"
+version = "0.9.5"
 authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 rocolatey-lib = { path = "../rocolatey-lib" }
 tokio = { version = "1.35.1", features = ["full"] }
-clap = "3.2.25"
-warp = "0.3.6"
+tokio-rustls = "0.24"
+clap = "4.4.14"
+warp = { version = "0.3.6", features = ["tls"] }
+rustls = "0.21"
+rustls-pemfile = "2.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.149", default-features = false, features = [
+  "alloc",
+] }
+uuid = { version = "1.20.0", features = ["v4", "serde"] }
+chrono = "0.4"
+log = "0.4.29"
+env_logger = "0.11.8"
+libc = "0.2.180"
+notify = "6.1"
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.8.0"
+windows-sys = "0.61.2"
