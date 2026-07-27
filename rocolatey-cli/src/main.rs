@@ -45,6 +45,15 @@ async fn main() {
     let color_mode = color_mode_from_matches(&matches);
     output_style::init(color_mode);
 
+    // Sync anstream's global stripping policy with the resolved color mode so
+    // that `anstream::print!` does not strip ANSI codes from piped output when
+    // the user has explicitly requested `--color always`.
+    match color_mode {
+        ColorMode::Always => anstream::ColorChoice::Always.write_global(),
+        ColorMode::Never  => anstream::ColorChoice::Never.write_global(),
+        ColorMode::Auto   => {} // leave anstream on its auto-detection default
+    }
+
     match matches.subcommand() {
         Some(("bad", matches)) => command_bad::bad(matches).await,
         Some(("install", matches)) => command_install::install(matches).await,
