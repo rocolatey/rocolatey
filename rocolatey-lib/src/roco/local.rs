@@ -350,16 +350,12 @@ fn get_package_from_nuspec_text(nuspec_content: &[u8]) -> Package {
         buf.clear();
     }
 
-    // Check if the package is pinned
+    // Check if the package is pinned (version-specific or all-versions)
     let choco_dir = get_chocolatey_dir().unwrap();
-    let mut pinned_file = PathBuf::from(choco_dir);
-    pinned_file.push(".chocolatey");
-    pinned_file.push(format!(
-        "{}.{}",
-        pkg_name.to_string(),
-        pkg_version.to_string()
-    ));
-    pinned_file.push(".pin");
+    let choco_base = PathBuf::from(choco_dir).join(".chocolatey");
+    let versioned_pin = choco_base.join(format!("{}.{}", pkg_name, pkg_version)).join(".pin");
+    let any_version_pin = choco_base.join(&pkg_name).join(".pin");
+    let is_pinned = versioned_pin.exists() || any_version_pin.exists();
 
     let the_dependencies = if dependencies.is_empty() {
         None
@@ -370,7 +366,7 @@ fn get_package_from_nuspec_text(nuspec_content: &[u8]) -> Package {
     Package {
         id: pkg_name.to_string(),
         version: pkg_version.to_string(),
-        pinned: pinned_file.exists(),
+        pinned: is_pinned,
         dependencies: the_dependencies,
     }
 }
