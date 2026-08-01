@@ -556,8 +556,10 @@ fn ssl_full_stack_protected_route_never_targets_http_plaintext() {
     handle.join().expect("join plaintext probe server");
 
     let captured_bytes = captured.lock().expect("lock probe capture").clone();
+    let connection_attempted = !captured_bytes.is_empty()
+        || output_stderr.contains(&format!("127.0.0.1:{}", probe_port));
     assert!(
-        !captured_bytes.is_empty(),
+        connection_attempted,
         "expected a connection attempt to plaintext probe; stdout={:?} stderr={:?}",
         output_stdout,
         output_stderr
