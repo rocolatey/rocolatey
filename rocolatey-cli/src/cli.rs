@@ -6,7 +6,11 @@ pub fn build_cli() -> Command {
         .short('r')
         .long("limitoutput")
         .action(ArgAction::SetTrue)
-        .help("limit the output to essential information");
+      .help("limit output to essential information (automation-safe, no ANSI colors)");
+    let common_arg_json_output: Arg = Arg::new("json-output")
+        .long("json")
+        .action(ArgAction::SetTrue)
+        .help("output results in JSON format");
     let common_arg_verbose = Arg::new("verbose")
         .short('v')
         .long("verbose")
@@ -22,15 +26,35 @@ pub fn build_cli() -> Command {
         .action(ArgAction::SetTrue)
         .help("require https/ssl-validation");
 
+    let color_arg = Arg::new("color")
+        .long("color")
+        .value_name("WHEN")
+        .global(true)
+        .default_value("auto")
+        .value_parser(["auto", "always", "never"])
+      .help("Control color output: auto (default), always, or never. -r always stays uncolored");
+
     Command::new("Rocolatey")
-    .version("0.9.3")
+    .version("0.9.5")
     .author("Manfred Wallner <schusterfredl@mwallner.net>")
-    .about("provides a basic interface for rocolatey-lib")
+    .about(r"
+
+  _____   ____   _____ ____  _            _______ ________     __
+ |  __ \ / __ \ / ____/ __ \| |        /\|__   __|  ____\ \   / /
+ | |__) | |  | | |   | |  | | |       /  \  | |  | |__   \ \_/ / 
+ |  _  /| |  | | |   | |  | | |      / /\ \ | |  |  __|   \   /  
+ | | \ \| |__| | |___| |__| | |____ / ____ \| |  | |____   | |   
+ |_|  \_\\____/ \_____\____/|______/_/    \_\_|  |______|  |_|   
+                                                                 
+                                                                 
+a Chocolatey package manager interface.")
+    .arg(color_arg)
     .subcommand(
       Command::new("list")
         .about("list local installed packages")
         .arg(Arg::new("filter").default_value("all"))
         .arg(&common_arg_limitoutput)
+        .arg(&common_arg_json_output)
         .arg(&common_arg_verbose)
         .arg(Arg::new("deptree").long("dependency-tree").action(ArgAction::SetTrue).help("list dependencies")),
     )
@@ -38,6 +62,7 @@ pub fn build_cli() -> Command {
       Command::new("bad")
         .about("list packages in lib-bad/")
         .arg(&common_arg_limitoutput)
+        .arg(&common_arg_json_output)
         .arg(&common_arg_verbose),
     )
     .subcommand(
@@ -73,6 +98,7 @@ pub fn build_cli() -> Command {
         )
         .arg(&common_arg_prerelease)
         .arg(&common_arg_limitoutput)
+        .arg(&common_arg_json_output)
         .arg(&common_arg_verbose)
         .arg(&common_arg_enable_cert_validation),
     )
@@ -80,6 +106,18 @@ pub fn build_cli() -> Command {
       Command::new("source")
         .about("list choco sources")
         .arg(&common_arg_limitoutput)
+        .arg(&common_arg_json_output)
+        .arg(&common_arg_verbose),
+    )
+    .subcommand(
+      Command::new("search")
+        .about("search for packages")
+        .arg(
+          Arg::new("pkg")
+          .required(true)
+        )
+        .arg(&common_arg_limitoutput)
+        .arg(&common_arg_json_output)
         .arg(&common_arg_verbose),
     )
     .subcommand(
@@ -90,6 +128,7 @@ pub fn build_cli() -> Command {
           .action(ArgAction::SetTrue)
           .help("display full license information"),
       )
+        .arg(&common_arg_json_output)
     )
     .subcommand(
       Command::new("upgrade").about("upgrade outdated choco packages (using choco.exe)")
@@ -101,6 +140,76 @@ pub fn build_cli() -> Command {
         .arg(&common_arg_limitoutput)
         .arg(&common_arg_verbose)
         .arg(&common_arg_enable_cert_validation),
+    )
+    .subcommand(
+        Command::new("install").about("install choco packages (using choco.exe)")
+        .arg(
+            Arg::new("pkg")
+            .required(true)
+        )
+        .arg(&common_arg_prerelease)
+        .arg(&common_arg_limitoutput)
+        .arg(&common_arg_verbose)
+        .arg(&common_arg_enable_cert_validation),
+    )
+    .subcommand(
+        Command::new("uninstall").about("uninstall choco packages (using choco.exe)")
+        .arg(
+            Arg::new("pkg")
+            .required(true)
+        )
+        .arg(&common_arg_limitoutput)
+        .arg(&common_arg_verbose)
+    )
+    .subcommand(
+        Command::new("pin")
+        .about("manage package pins")
+        .subcommand(
+            Command::new("list")
+                .about("list pinned packages")
+                .arg(&common_arg_limitoutput)
+                .arg(&common_arg_json_output)
+        )
+        .subcommand(
+            Command::new("add")
+                .about("pin a package to prevent upgrades")
+                .arg(Arg::new("pkg").required(true))
+                .arg(Arg::new("version").long("version").help("specific version to pin"))
+        )
+        .subcommand(
+            Command::new("remove")
+                .about("remove a package pin")
+                .arg(Arg::new("pkg").required(true))
+                .arg(Arg::new("version").long("version").help("specific version to unpin"))
+        )
+    )
+    .subcommand(
+        Command::new("server").about("manage roco server configuration and TLS setup")
+        .arg(
+            Arg::new("setup-tls-help")
+            .long("setup-tls-help")
+            .action(ArgAction::SetTrue)
+            .help("display TLS setup status and enrollment guidance")
+        )
+        .arg(
+            Arg::new("gen-cert")
+            .long("gen-cert")
+            .action(ArgAction::SetTrue)
+            .help("generate TLS certificates for client and server")
+        )
+        .arg(
+            Arg::new("force")
+            .long("force")
+            .action(ArgAction::SetTrue)
+            .help("regenerate certificates even if they exist (creates timestamped backups)")
+        )
+        .arg(
+          Arg::new("bootstrap-local-trust")
+          .long("bootstrap-local-trust")
+          .action(ArgAction::SetTrue)
+          .help("bootstrap local key exchange and enroll current account client fingerprint on this host")
+        )
+        .arg(&common_arg_verbose)
     )
 }
 

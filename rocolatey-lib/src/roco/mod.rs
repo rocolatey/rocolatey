@@ -1,16 +1,20 @@
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+pub mod roco_server;
 pub mod local;
 pub mod nuget2;
 pub mod nuget3;
 pub mod remote;
 pub mod semver;
+pub mod client_tls;
+pub mod pin;
 use crate::println_verbose;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum NuspecTag {
     Null,
     Id,
@@ -18,7 +22,7 @@ pub enum NuspecTag {
     Dependency,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum FeedType {
     Unknown,
     LocalFileSystem,
@@ -26,7 +30,7 @@ pub enum FeedType {
     NuGetV3,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     pub id: String,
     pub version: String,
@@ -35,6 +39,14 @@ pub struct Package {
 }
 
 impl Package {
+    pub fn new(id: &str) -> Self {
+        Package {
+            id: id.to_string(),
+            version: String::new(),
+            pinned: false,
+            dependencies: None,
+        }
+    }
     // access all the members via getters (immutable refs + copies only)
     pub fn id(&self) -> &str {
         &self.id
@@ -47,7 +59,7 @@ impl Package {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Feed {
     pub name: String,
     pub url: String,
@@ -63,19 +75,19 @@ pub struct Feed {
     pub service_index: Option<nuget3::NuGetV3Index>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Credential {
     pub user: String,
     pub pass: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProxySettings {
     pub url: String,
     pub credential: Option<Credential>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutdatedInfo {
     pub id: String,
     pub local_version: String,
@@ -175,13 +187,13 @@ fn get_chocolatey_dir() -> Result<String, std::env::VarError> {
     match std::env::var(key) {
         Ok(val) => Ok(String::from(val)),
         Err(e) => {
-            eprintln!("failed to get choco dir 'ChocolateyInstall': {}", e);
+            anstream::eprintln!("failed to get choco dir 'ChocolateyInstall': {}", e);
             ::std::process::exit(1)
         }
     }
 }
 
-fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
+pub fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
     let mut sources = Vec::new();
     let choco_dir = get_chocolatey_dir().expect("failed to get choco dir");
     let mut cfg_dir = PathBuf::from(choco_dir);
@@ -228,10 +240,10 @@ fn get_choco_sources() -> Result<Vec<Feed>, std::io::Error> {
                     buf.clear();
                 }
             }
-            Err(e) => println!("{:?}", e),
+            Err(e) => anstream::println!("{:?}", e),
         }
     }
-    // println!("{:#?}", config_settings);
+    // anstream::println!("{:#?}", config_settings);
     let proxy_config = match config_settings.get("proxy") {
         Some(proxy_url) => match proxy_url.is_empty() {
             true => None,
@@ -324,18 +336,24 @@ fn decrypt_choco_config_string(encrypted: &str) -> String {
     }
     */
     println_verbose(&format!("decypher '{}'", encrypted));
-    let pwsh = format!(
-        "Add-Type -AssemblyName System.Security;([System.Text.UTF8Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect(([System.Convert]::FromBase64String('{}')),([System.Text.UTF8Encoding]::UTF8.GetBytes('Chocolatey')),[System.Security.Cryptography.DataProtectionScope]::LocalMachine)))",
-        encrypted
-    );
-    let chdec = std::process::Command::new("powershell.exe")
+    let pwsh_script = "Add-Type -AssemblyName System.Security;$enc=[System.Text.Encoding]::UTF8.GetString([System.IO.Stream]::new([Console]::OpenStandardInput()).ReadAllBytes());([System.Text.UTF8Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect(([System.Convert]::FromBase64String($enc)),([System.Text.UTF8Encoding]::UTF8.GetBytes('Chocolatey')),[System.Security.Cryptography.DataProtectionScope]::LocalMachine)))";
+    let mut chdec = std::process::Command::new("powershell.exe")
         .arg("-NoProfile")
         .arg("-ExecutionPolicy")
         .arg("Bypass")
-        .arg(pwsh)
-        .output()
-        .expect("failed to run decypher text");
-    let decrypted = String::from_utf8_lossy(&chdec.stdout);
+        .arg("-Command")
+        .arg(pwsh_script)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .expect("failed to spawn powershell for decryption");
+    // Write encrypted value via stdin to avoid shell interpolation
+    use std::io::Write;
+    if let Some(mut stdin) = chdec.stdin.take() {
+        stdin.write_all(encrypted.as_bytes()).ok();
+    }
+    let output = chdec.wait_with_output().expect("failed to run decypher text");
+    let decrypted = String::from_utf8_lossy(&output.stdout);
     let res = decrypted.trim(); // remove newlines
     res.to_string()
 }
@@ -365,7 +383,8 @@ mod tests {
         let choco_source: &Feed = sources.iter().find(|s| s.name == "chocolatey").unwrap();
 
         assert_eq!(choco_source.name, "chocolatey");
-        assert_eq!(choco_source.url, "https://chocolatey.org/api/v2");
+        let normalized_choco_url = choco_source.url.trim_end_matches('/');
+        assert_eq!(normalized_choco_url, "https://chocolatey.org/api/v2");
         assert_eq!(choco_source.priority, 101);
         assert_eq!(choco_source.admin_only, false);
         assert_eq!(choco_source.bypass_proxy, false);

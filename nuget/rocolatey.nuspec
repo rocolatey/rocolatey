@@ -1,52 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Do not remove this test for UTF-8: if “Ω” doesn’t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
+<!-- Do not remove this test for UTF-8: if “Ω” doesn’t appear as greek uppercase omega letter
+enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>rocolatey</id>
     <title>ROCO(latey)</title>
-    <version>0.9.3</version>
+    <version>0.9.5</version>
     <authors>Manfred Wallner</authors>
     <owners>Manfred Wallner</owners>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <summary>blazing fast Chocolatey queries</summary>
     <description>
 ## R(ocket-fast) Chocolatey queries.
 
 * mimics output of Chocolatey commands (drop-in replacement)
-* doesn't make use of Chocolatey or chocolatey.dll - just looks at the filesystem / does native ODATA calls.
+* doesn't make use of Chocolatey or chocolatey.dll - just looks at the filesystem / does
+native ODATA calls.
 * can be used to query Chocolatey status while choco.exe is running.
 * it's supposed to be much faster for each command that has a Chocolatey counterpart.
 
 ### What can roco do for me?
 
-Take a look at the help (roco -h), basically roco allows you to list installed packages, list failed package installs, configured sources and check for updates. In addition to that, there may be some hidden gems that are only available in roco, but not in vanilla Chocolatey.
+Take a look at the help (roco -h), basically roco allows you to list installed packages, 
+list failed package installs, configured sources and check for updates. In addition to that, 
+there may be some hidden gems that are only available in roco, but not in vanilla Chocolatey.
 
-|    choco command    |  roco command   |
+| choco command       | roco command    |
 | :-----------------: | :-------------: |
-| `choco source list` |  `roco source`  |
-|  `choco list -lo`   |   `roco list`   |
-|  `choco outdated`   | `roco outdated` |
-|          -          |   `roco bad`    |
-|          -          |   ... :wink:    |
+| `choco source list` | `roco source`   |
+| `choco list -lo`    | `roco list`     |
+| `choco outdated`    | `roco outdated` |
+|       -             | `roco bad`      |
+|       -             | ... :wink:      |
 
-Normally you should not run multiple Chocolatey instances at the same time, however this may be required in certain scenarios. If you wanted to check if updates are available, or simply list all configured sources, roco is there to help you out without worrying of breaking something because you accidentally called choco in parallel.
+Normally you should not run multiple Chocolatey instances at the same time, however this may
+be required in certain scenarios. If you wanted to check if updates are available, or simply
+list all configured sources, roco is there to help you out without worrying of breaking
+something because you accidentally called choco in parallel.
 
 ### How much faster is roco.exe compared to choco.exe?
 
-It very much depends on the number of installed packages and configured feeds, generally speaking roco should always be much faster than choco, the difference becomes bigger when dealing with many packages and feeds.
+It very much depends on the number of installed packages and configured feeds, 
+generally speaking roco should always be much faster than choco, 
+the difference becomes bigger when dealing with many packages and feeds.
 
-Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages) in March 2024, the main performance benefit of roco when dealing with this feed is gone. - Bulk queries to this repository are not possible anymore.
+Due to changes in the OData endpoint of the [Chocolatey Community Repository](https://community.chocolatey.org/packages) in March 2024, 
+the main performance benefit of roco when dealing with this feed is gone. - Bulk queries to this repository are not possible anymore.
 Rocolatey will still be faster than choco with CCR, although only in the `--ignore-http-cache` mode of `choco.exe`.
 
+### License Note
+
+This package contains `roco.exe` (MIT License) and `rocolatey-server.exe`
+(Business Source License 1.1). See LICENSE files in the package for full terms.
+Organizations require a commercial license for rocolatey-server.
+Contact: rocolatey@mwallner.net
+
     </description>
-    <copyright>Copyright (c) 2020-2024 Manfred Wallner</copyright>
+    <copyright>Copyright (c) 2020-2026 Manfred Wallner</copyright>
     <projectUrl>https://github.com/rocolatey/rocolatey</projectUrl>
-    <licenseUrl>https://raw.githubusercontent.com/rocolatey/rocolatey/master/LICENSE.txt</licenseUrl>
+    <licenseUrl>https://raw.githubusercontent.com/rocolatey/rocolatey/main/rocolatey-server/LICENSE</licenseUrl>
     <iconUrl>https://cdn.jsdelivr.net/gh/rocolatey/rocolatey/roco_sq.png</iconUrl>
     <language>en-US</language>
     <tags>chocolatey local tool roco</tags>
     <dependencies>
-      <dependency id="vcredist140"/>
+      <dependency id="vcredist140" />
     </dependencies>
   </metadata>
   <files>

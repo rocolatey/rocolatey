@@ -12,8 +12,11 @@ use crate::println_verbose;
 use crate::roco::{
     get_choco_sources, get_chocolatey_dir, xml_attribs_to_map, Feed, NuspecTag, Package,
 };
+use crate::server::DependencyTreeNode;
 
-pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+pub fn get_local_packages(
+    filter: &str,
+) -> Result<(Vec<Package>, usize), Box<dyn std::error::Error>> {
     let mut pkgs: Vec<Package> = Vec::new();
     let choco_dir = get_chocolatey_dir().unwrap_or_else(|_| String::from("."));
     let mut pkg_dir = PathBuf::from(choco_dir);
@@ -22,10 +25,15 @@ pub fn get_local_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> 
     for entry in glob::glob(&pkg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => pkgs.push(get_package_from_nuspec(&path)),
-            Err(e) => println!("{:?}", e),
+            Err(e) => anstream::println!("{:?}", e),
         }
     }
-    Ok(pkgs)
+    let total_packages = pkgs.len();
+    if (filter.is_empty()) || (filter == "all") {
+        return Ok((pkgs, total_packages));
+    }
+    pkgs = filter_packages(filter, pkgs);
+    Ok((pkgs, total_packages))
 }
 
 pub fn get_local_bad_packages() -> Result<Vec<Package>, Box<dyn std::error::Error>> {
@@ -39,7 +47,7 @@ pub fn get_local_bad_packages() -> Result<Vec<Package>, Box<dyn std::error::Erro
     for entry in glob::glob(&pkg_dir.to_string_lossy()).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => pkgs.push(get_package_from_nuspec(&path)),
-            Err(e) => println!("{:?}", e),
+            Err(e) => anstream::println!("{:?}", e),
         }
     }
     Ok(pkgs)
@@ -85,10 +93,47 @@ fn get_dependency_tree_pkg_text(
     res
 }
 
+fn collect_dependency_tree_pkg_nodes(
+    level: usize,
+    pkg: &Package,
+    packages: &HashMap<String, &Package>,
+    nodes: &mut Vec<DependencyTreeNode>,
+) {
+    if level == 1 {
+        nodes.push(DependencyTreeNode {
+            id: pkg.id.clone(),
+            version: pkg.version.clone(),
+            depth: 0,
+            parent_id: None,
+            missing: false,
+        });
+    }
+
+    if let Some(dependencies) = &pkg.dependencies {
+        for dependency in dependencies {
+            let child_parent_id = Some(pkg.id.clone());
+            let package = packages.get(&dependency.id.to_lowercase());
+            let resolved = package.is_some();
+
+            nodes.push(DependencyTreeNode {
+                id: dependency.id.clone(),
+                version: dependency.version.clone(),
+                depth: level,
+                parent_id: child_parent_id.clone(),
+                missing: !resolved,
+            });
+
+            if let Some(child_pkg) = package {
+                collect_dependency_tree_pkg_nodes(level + 1, child_pkg, packages, nodes);
+            }
+        }
+    }
+}
+
 pub fn get_dependency_tree_text(filter: &str) -> String {
     let mut res = String::new();
 
-    let packages = get_local_packages().unwrap();
+    let (packages, _) = get_local_packages("").unwrap();
     let filter = filter.to_lowercase();
 
     let mut packages_lookup = HashMap::new();
@@ -109,22 +154,49 @@ pub fn get_dependency_tree_text(filter: &str) -> String {
     res
 }
 
+pub fn get_dependency_tree_nodes(filter: &str) -> Vec<DependencyTreeNode> {
+    let (packages, _) = get_local_packages("").unwrap();
+    let filter = filter.to_lowercase();
+
+    let mut packages_lookup = HashMap::new();
+    for p in &packages {
+        packages_lookup.insert(p.id.to_lowercase(), p);
+    }
+
+    let mut nodes = Vec::new();
+    for p in &packages {
+        if filter != "all" && !p.id.contains(&filter) {
+            continue;
+        }
+        collect_dependency_tree_pkg_nodes(1, p, &packages_lookup, &mut nodes);
+    }
+
+    nodes
+}
+
 pub fn get_local_packages_text(filter: &str, limitoutput: bool) -> String {
-    let packages = get_local_packages().unwrap();
-    let num_packages = packages.len();
+    let (packages, num_packages) = get_local_packages(filter).unwrap();
     let mut res = String::new();
-    res.push_str(get_package_list_text(filter, packages, limitoutput).as_ref());
+    res.push_str(get_package_list_text(packages, limitoutput).as_ref());
     if !limitoutput {
         res.push_str(&format!("\r\n{} packages installed.", num_packages));
     }
     res
 }
 
+pub fn get_local_packages_json(filter: &str) -> String {
+    let (packages, _num_packages) = get_local_packages(filter).unwrap();
+    match serde_json::to_string(&packages) {
+        Ok(s) => s,
+        Err(_) => String::new(),
+    }
+}
+
 pub fn get_local_bad_packages_text(limitoutput: bool) -> String {
     let packages = get_local_bad_packages().unwrap();
     let num_packages = packages.len();
     let mut res = String::new();
-    res.push_str(get_package_list_text("all", packages, limitoutput).as_ref());
+    res.push_str(get_package_list_text(packages, limitoutput).as_ref());
     if !limitoutput {
         res.push_str(&format!("\r\n{} packages in lib-bad.", num_packages));
     }
@@ -194,18 +266,27 @@ pub fn get_sources_text(limitoutput: bool) -> String {
     res
 }
 
-fn get_package_list_text(filter: &str, packages: Vec<Package>, limitoutput: bool) -> String {
-    let mut res = String::new();
-    let num_iterations = packages.len();
-    let sep = if limitoutput { "|" } else { " " };
+pub fn filter_packages(filter: &str, packages: Vec<Package>) -> Vec<Package> {
+    let mut res: Vec<Package> = Vec::new();
     let filter = filter.to_lowercase();
 
-    for (i, p) in packages.iter().enumerate() {
+    for p in packages.iter() {
         if filter != "all" {
             if !p.id.contains(&filter) {
                 continue;
             }
         }
+        res.push(p.clone());
+    }
+    res
+}
+
+pub fn get_package_list_text(packages: Vec<Package>, limitoutput: bool) -> String {
+    let mut res = String::new();
+    let num_iterations = packages.len();
+    let sep = if limitoutput { "|" } else { " " };
+
+    for (i, p) in packages.iter().enumerate() {
         res.push_str(&format!("{}{}{}", p.id(), sep, p.version()));
         if i < (num_iterations - 1) {
             res.push_str("\r\n");
@@ -269,16 +350,12 @@ fn get_package_from_nuspec_text(nuspec_content: &[u8]) -> Package {
         buf.clear();
     }
 
-    // Check if the package is pinned
+    // Check if the package is pinned (version-specific or all-versions)
     let choco_dir = get_chocolatey_dir().unwrap();
-    let mut pinned_file = PathBuf::from(choco_dir);
-    pinned_file.push(".chocolatey");
-    pinned_file.push(format!(
-        "{}.{}",
-        pkg_name.to_string(),
-        pkg_version.to_string()
-    ));
-    pinned_file.push(".pin");
+    let choco_base = PathBuf::from(choco_dir).join(".chocolatey");
+    let versioned_pin = choco_base.join(format!("{}.{}", pkg_name, pkg_version)).join(".pin");
+    let any_version_pin = choco_base.join(&pkg_name).join(".pin");
+    let is_pinned = versioned_pin.exists() || any_version_pin.exists();
 
     let the_dependencies = if dependencies.is_empty() {
         None
@@ -289,7 +366,7 @@ fn get_package_from_nuspec_text(nuspec_content: &[u8]) -> Package {
     Package {
         id: pkg_name.to_string(),
         version: pkg_version.to_string(),
-        pinned: pinned_file.exists(),
+        pinned: is_pinned,
         dependencies: the_dependencies,
     }
 }
@@ -326,9 +403,9 @@ fn get_package_from_nupkg(nupkg_path: &str) -> Option<Package> {
         return get_package_from_nupkg_filename(nupkg_path);
     }
 
-    let p =  get_package_from_nuspec_text(nuspec_content.as_bytes());
+    let p = get_package_from_nuspec_text(nuspec_content.as_bytes());
     Some(p)
- }
+}
 
 fn get_package_from_nupkg_filename(filename: &str) -> Option<Package> {
     let semver_regex = regex::Regex::new(r#"^(.+?)\.(((\d+\.?)+)(-.+)?)\.nupkg$"#).unwrap();
@@ -344,7 +421,7 @@ fn get_package_from_nupkg_filename(filename: &str) -> Option<Package> {
             dependencies: None,
         }),
         None => {
-            println!("ERROR: failed to get package from filename '{}'", filename);
+            anstream::println!("ERROR: failed to get package from filename '{}'", filename);
             None
         }
     }
@@ -402,11 +479,41 @@ mod tests {
         // TODO: look up if package ids are case-sensitive or not
         // NOTE: would need to normalize across local/v2/v3 sources
         // iirc ProGet does 'support' case-sensitive package IDs
-        let mut pkg_path = PathBuf::from(
+        let mut choco_lib_path = PathBuf::from(
             get_chocolatey_dir().expect("env:ChocolateyInstall must be set during tests!"),
         );
-        pkg_path.push("lib");
-        pkg_path.push("Chocolatey/Chocolatey.nuspec");
+        choco_lib_path.push("lib");
+
+        let mut pkg_path = None;
+        for entry in std::fs::read_dir(&choco_lib_path)
+            .expect("failed to read Chocolatey lib directory")
+        {
+            let dir_path = entry
+                .expect("failed to read package directory entry")
+                .path();
+            if !dir_path.is_dir() {
+                continue;
+            }
+
+            for file_entry in std::fs::read_dir(&dir_path)
+                .expect("failed to read package directory")
+            {
+                let file_path = file_entry.expect("failed to read package file entry").path();
+                let is_chocolatey_nuspec = file_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name.eq_ignore_ascii_case("chocolatey.nuspec"))
+                    .unwrap_or(false);
+                if file_path.is_file() && is_chocolatey_nuspec {
+                    pkg_path = Some(file_path);
+                    break;
+                }
+            }
+            if pkg_path.is_some() {
+                break;
+            }
+        }
+        let pkg_path = pkg_path.expect("Chocolatey nuspec file not found under lib");
 
         let pkg = get_package_from_nuspec(&pkg_path);
         assert_eq!(pkg.id, "Chocolatey");
@@ -417,7 +524,7 @@ mod tests {
     fn get_nupkgs_from_path_test() {
         let tests_root = std::env::var("RocolateyTestRoot").unwrap();
         let mut tests_repo = PathBuf::from(tests_root);
-        tests_repo.push("fake_repo");
+        tests_repo.push("../fake_repo");
         let test_repo_str = tests_repo.into_os_string().into_string().unwrap();
 
         let tests_feed = Feed {

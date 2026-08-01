@@ -1,5 +1,4 @@
-use rocolatey_lib::roco::remote::get_outdated_packages;
-use std::process::{Command, Stdio};
+use rocolatey_lib::{println_verbose, roco::remote::get_outdated_packages};
 
 pub async fn upgrade(matches: &clap::ArgMatches) {
     rocolatey_lib::set_verbose_mode(matches.get_flag("verbose"));
@@ -10,14 +9,18 @@ pub async fn upgrade(matches: &clap::ArgMatches) {
 
     let (_, outdated_packages) = get_outdated_packages(pkg, r, pre, true, true).await;
 
-    let package_names: Vec<&str> = outdated_packages
+    let mut package_names: Vec<&str> = outdated_packages
         .iter()
         .map(|pkg| pkg.id.as_str())
         .collect();
 
-    if package_names.is_empty() {
-        println!("No outdated packages found.");
+    if pkg == "all" && package_names.is_empty() {
+        anstream::println!("No outdated packages found.");
         return;
+    }
+
+    if pkg != "all" {
+        package_names = vec![pkg.as_str()];
     }
 
     let mut choco_args = vec!["upgrade", "--ignore-http-cache", "-y"];
@@ -34,22 +37,20 @@ pub async fn upgrade(matches: &clap::ArgMatches) {
         choco_args.push("-v");
     }
 
-    let status = Command::new("choco")
-        .args(&choco_args)
-        .args(&package_names)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status()
-        .expect("Failed to start elevated choco upgrade process")
-        .success();
+    let exit_code = rocolatey_lib::run_choco(&choco_args, &package_names).await;
 
-    if status {
-        println!(
+    if exit_code == 0 {
+        println_verbose(&format!(
             "Successfully upgraded packages: {}",
             package_names.join(", ")
-        );
+        ));
     } else {
-        eprintln!("Failed to upgrade packages: {}", package_names.join(", "));
+        println_verbose(&format!(
+            "Failed to upgrade packages: {} (exit code={})",
+            package_names.join(", "),
+            exit_code
+        ));
     }
+
+    std::process::exit(exit_code);
 }

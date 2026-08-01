@@ -31,6 +31,9 @@ jobs:
       run: cargo build --verbose
 
     - name: Run tests on ${{ matrix.os }}
+      env:
+        ChocolateyInstall: test/fake_choco_home
+        RocolateyTestRoot: test/fake_choco_home
       run: cargo test --verbose
       
   build-test-nightly:
@@ -55,6 +58,9 @@ jobs:
         toolchain: nightly
         override: true
     - uses: actions-rs/cargo@v1.0.3
+      env:
+        ChocolateyInstall: test/fake_choco_home
+        RocolateyTestRoot: test/fake_choco_home
       with: 
         command: test
         
@@ -89,6 +95,13 @@ jobs:
           use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
+
+      - name: License notice
+        run: |
+          echo "::notice::roco.exe: MIT License"
+          echo "::notice::rocolatey-server.exe: Business Source License 1.1 (BUSL-1.1)"
+          echo "::notice::Organizations require a commercial license for rocolatey-server."
+          echo "::notice::Contact rocolatey@mwallner.net for licensing."
 
       - name: Upload Release Build Artifacts
         uses: actions/upload-artifact@v4

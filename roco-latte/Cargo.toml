@@ -1,0 +1,13 @@
+[package]
+license = "MIT"
+name = "roco-latte"
+version = "0.9.5"
+authors = ["Manfred Wallner <schusterfredl@mwallner.net>"]
+edition = "2021"
+
+[dependencies]
+rocolatey-lib = { path = "../rocolatey-lib" }
+
+iced = { version = "0.14.0", features = ["wgpu", "image"] }
+futures = "0.3.31"
+async-std = { version = "1.12", features = ["attributes"] }

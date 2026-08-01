@@ -55,12 +55,12 @@ pub(crate) async fn get_remote_packages(
     feed: &Feed,
     prerelease: bool,
 ) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
-
     let latest_filter = match prerelease {
         true => "IsAbsoluteLatestVersion",
         false => "IsLatestVersion",
     };
-    let query_string_base: String = format!("{}/Packages?$filter={} and (", feed.url, latest_filter);
+    let query_string_base: String =
+        format!("{}/Packages?$filter={} and (", feed.url, latest_filter);
     let total_pkgs = pkgs.len();
 
     // https://chocolatey.org/api/v2/Packages?$filter=IsLatestVersion and (Id eq 'Chocolatey' or Id eq 'Boxstarter' or Id eq 'vscode' or Id eq 'notepadplusplus')
@@ -82,6 +82,52 @@ pub(crate) async fn get_remote_packages(
         &query_string_base,
         max_batch_size,
         |p| format!("(tolower(Id) eq '{}')", p.id.to_lowercase()),
+        &query_str_delim,
+        &query_str_end,
+        |pkgs, batch_str| -> () {
+            pkgs.extend(get_packages_from_odata(batch_str));
+        },
+    )
+    .await
+}
+
+pub(crate) async fn find_remote_packages(
+    search_terms: &Vec<String>,
+    feed: &Feed,
+    prerelease: bool,
+) -> Result<Vec<Package>, Box<dyn std::error::Error>> {
+    // Use OData substring search (substringof) to find packages matching the given ids/terms
+    let latest_filter = match prerelease {
+        true => "IsAbsoluteLatestVersion",
+        false => "IsLatestVersion",
+    };
+
+    // "https://community.chocolatey.org/api/v2/Search()?`$filter=IsLatestVersion&`$skip=0&`$top=30&searchTerm='git'&targetFramework=''&includePrerelease=false"
+    let query_string_base: String = format!(
+        "{}/Search()?$filter={}&$skip=0&$top=30&",
+        feed.url, latest_filter
+    );
+
+    let query_str_delim = " or ".to_owned();
+    let query_str_end = "&includePrerelease=false".to_owned();
+
+    // create pseudo-packages from search terms (only `id` is used by the query formatter)
+    let search_pkgs: Vec<Package> = search_terms
+        .iter()
+        .map(|id| Package {
+            id: id.clone(),
+            version: String::new(),
+            pinned: false,
+            dependencies: None,
+        })
+        .collect();
+
+    invoke_package_bulk_request(
+        &search_pkgs,
+        feed,
+        &query_string_base,
+        search_terms.len() as u32,
+        |p| format!("searchTerm='{}'&targetFramework=''", p.id.to_lowercase()),
         &query_str_delim,
         &query_str_end,
         |pkgs, batch_str| -> () {
@@ -149,7 +195,7 @@ pub(crate) fn get_packages_from_odata(odata_xml: &str) -> Vec<Package> {
                         id: pkg_name.to_string(),
                         version: pkg_version.to_string(),
                         pinned: false,
-                        dependencies: None
+                        dependencies: None,
                     });
                     state = ODataParserState::LookingForEntry;
                 }
